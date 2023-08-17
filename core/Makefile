@@ -80,7 +80,7 @@ $(SLIB_SYMLINK):
 	ln -sf $(SLIB) $@
 
 $(OBJS) : %.o : %.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $< -I/usr/local/cuda-11.8/targets/x86_64-linux/include
 
 $(COBJS) : %.o : %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<

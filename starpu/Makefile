@@ -24,7 +24,7 @@ endif
 
 # Include directories
 INC        = -I$(STARPU_DIR)/include/starpu/$(STARPU_VERSION) -I../core
-INC_EXT    = 
+INC_EXT    = -I/usr/local/cuda-11.8/targets/x86_64-linux/include
 
 # Location of the libraries.
 LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-$(STARPU_VERSION).so $(STARPU_DIR)/lib/libstarpumpi-$(STARPU_VERSION).so -L../core -lcore_s
