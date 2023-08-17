@@ -27,6 +27,7 @@ LIB := $(LIB) $(LIB_EXT)
 CXXFLAGS += $(INC)
 
 include ../core/make_blas.mk
+LDFLAGS += -lcublas
 
 TARGET = main
 all: $(TARGET)

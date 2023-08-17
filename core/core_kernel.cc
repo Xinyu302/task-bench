@@ -26,9 +26,21 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
+#define STARPU_USE_CUDA
+
+#ifdef STARPU_USE_CUDA
+#include <cublas_v2.h>
+static cublasHandle_t handle;
+// #include <starpu_cublas_v2.h>
+#endif
+
 #ifdef USE_BLAS_KERNEL
 #include <mkl.h>
 #endif
+
+void init_cublas() {
+  cublasCreate(&handle);
+}
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -187,7 +199,33 @@ void execute_kernel_dgemm(const Kernel &kernel,
                 m, n, p, alpha, A, p, B, n, beta, C, n);
   }
 #else
-  fprintf(stderr, "No BLAS is detected\n");
+  fprintf(stderr, "STARPU_USE_CUDA is not enabled\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+void execute_kernel_dgemm_cuda(const GPUKernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes)
+{
+#ifdef STARPU_USE_CUDA
+  long long N = scratch_bytes / (3 * sizeof(double));
+  int m, n, p;
+  double alpha, beta;
+
+  m = n = p = sqrt(N);
+  alpha = 1.0; beta = 1.0;
+
+  double *A = reinterpret_cast<double *>(scratch_ptr);
+  double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+  double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, 
+                m, n, p, &alpha, A, p, B, n, &beta, C, n);
+  }
+#else
+  fprintf(stderr, "STARPU_USE_CUDA is not enabled\n");
   fflush(stderr);
   abort();
 #endif
@@ -220,52 +258,66 @@ void execute_kernel_daxpy(const Kernel &kernel,
 #endif
 }
 
-double execute_kernel_compute(const Kernel &kernel)
+void execute_kernel_daxpy_cuda(const GPUKernel &kernel,
+                          char *scratch_large_ptr, size_t scratch_large_bytes,
+                          long timestep)
 {
-#if __AVX2__ == 1
-  __m256d A[16];
+#ifdef STARPU_USE_CUDA
+  for (long iter = 0; iter < kernel.iterations; iter++) {  
+    size_t scratch_bytes = scratch_large_bytes / kernel.samples;
+    int idx = (timestep * kernel.iterations + iter) % kernel.samples;
+    char *scratch_ptr = scratch_large_ptr + idx * scratch_bytes;
   
-  for (int i = 0; i < 16; i++) {
-    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
-  }
-  
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 16; i++) {
-      A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
-    }
-  }
-#elif __AVX__ == 1
-  __m256d A[16];
-  
-  for (int i = 0; i < 16; i++) {
-    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
-  }
-  
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 16; i++) {
-      A[i] = _mm256_mul_pd(A[i], A[i]);
-      A[i] = _mm256_add_pd(A[i], A[i]);
-    }
+    int N = scratch_bytes / (2 * sizeof(double));
+    double alpha;
+
+    alpha = 1.0;
+
+    double *X = reinterpret_cast<double *>(scratch_ptr);
+    double *Y = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+    
+    cublasDaxpy(handle, N, &alpha, X, 1, Y, 1);
   }
 #else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+double execute_kernel_compute(const Kernel &kernel)
+{
   double A[64];
-  
+  double D[64];
+  int n = 64;
   for (int i = 0; i < 64; i++) {
     A[i] = 1.2345;
   }
+  // float d = 0.0;
+  // for (long iter = 0; iter < kernel.iterations; iter++) {
+  //   cublasDdot(handle, n, A, 1, A, 1, D);
+  //   float alpha = 1.0;
+  //   cublasDaxpy(handle, n, &alpha, A, 1, D, 1);
+  // }
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 64; i++) {
         A[i] = A[i] * A[i] + A[i];
     }
   } 
-#endif
   double *C = (double *)A;
   double dot = 1.0;
   for (int i = 0; i < 64; i++) {
     dot *= C[i];
   }
   return dot;  
+}
+
+
+
+double execute_kernel_compute_cuda(const GPUKernel &kernel) {
+
+  return 0.0f;
 }
 
 double execute_kernel_compute2(const Kernel &kernel)

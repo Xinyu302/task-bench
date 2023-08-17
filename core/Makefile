@@ -60,6 +60,9 @@ else
 endif
 
 include make_blas.mk
+# enable cublas
+LDFLAGS += -lcublas
+# LD_FLAGS += -lcublas
 
 .PHONY: all
 all: $(SLIB) $(DLIB) $(SLIB_SYMLINK)

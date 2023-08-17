@@ -16,10 +16,10 @@ STARPU_VERSION ?= 1.3
 
 ifeq ($(strip $(DEBUG)),0)
 CFLAGS		 += -O3
-LDFLAGS		 += -O3
+LDFLAGS		 += -O3 -lcublas
 else
 CFLAGS		 += -g -O0
-LDFLAGS		 += -g -O0
+LDFLAGS		 += -g -O0 -lcublas
 endif
 
 # Include directories

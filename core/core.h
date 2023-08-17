@@ -37,6 +37,17 @@ private:
   friend struct TaskGraph;
 };
 
+struct GPUKernel : public kernel_t {
+  GPUKernel() = default;
+  GPUKernel(kernel_t k) : kernel_t(k) {}
+
+private:
+  void execute(long graph_index, long timestep, long point,
+               char *scratch_ptr, size_t scratch_bytes) const;
+  friend struct TaskGraph;
+
+};
+
 struct TaskGraph : public task_graph_t {
   TaskGraph() = default;
   TaskGraph(task_graph_t t) : task_graph_t(t) {}
@@ -69,6 +80,11 @@ struct TaskGraph : public task_graph_t {
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
+  void execute_point_common(int starpu_cuda, long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs,
+                     char *scratch_ptr, size_t scratch_bytes) const;
   static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 
@@ -90,5 +106,7 @@ static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 long long count_flops_per_task(const TaskGraph &g, long timestep, long point);
 long long count_bytes_per_task(const TaskGraph &g, long timestep, long point);
+
+void init();
 
 #endif
