@@ -46,6 +46,7 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
     execute_kernel_empty(*this);
     break;
   case KernelType::COMPUTE_DGEMM:
+    printf("here! in gpu\n");
     execute_kernel_dgemm_cuda(*this, scratch_ptr, scratch_bytes);
     break;
   case KernelType::MEMORY_DAXPY:
@@ -666,6 +667,7 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   long last_width = width_at_timestep(timestep-1);
 
   // Validate input
+  /*
   {
     size_t idx = 0;
     long dset = dependence_set_at_timestep(timestep);
@@ -719,6 +721,7 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
     uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
     assert(*scratch == MAGIC_VALUE);
   }
+  */
 
   // Execute kernel
   if (starpu_cuda == 0) {
