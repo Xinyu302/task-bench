@@ -722,6 +722,15 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
     assert(*scratch == MAGIC_VALUE);
   }
   */
+  // std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  // for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+  //   output[i].first = timestep;
+  //   output[i].second = point;
+  // }
+  if (scratch_bytes > 0) {
+    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+    assert(*scratch == MAGIC_VALUE);
+  }
 
   // Execute kernel
   if (starpu_cuda == 0) {

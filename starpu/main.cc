@@ -809,6 +809,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   : App(argc, argv)
 {
   init(); // init cublas
+  starpu_cublas_init();
   cl_task1.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task1.cpu_funcs[0]  = task1_cpu;                                       
   cl_task1.cuda_funcs[0]  = task1_cuda;
