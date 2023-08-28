@@ -39,15 +39,14 @@ static bool needs_period(DependenceType dtype) {
 }
 
 void GPUKernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes) const {
+                     char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const {
   switch (type)
   {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
     break;
   case KernelType::COMPUTE_DGEMM:
-    printf("here! in gpu\n");
-    execute_kernel_dgemm_cuda(*this, scratch_ptr, scratch_bytes);
+    execute_kernel_dgemm_cuda(*this, scratch_ptr, scratch_bytes, inhandle);
     break;
   case KernelType::MEMORY_DAXPY:
     execute_kernel_daxpy_cuda(*this, scratch_ptr, scratch_bytes, timestep);
@@ -648,7 +647,7 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs,
-                              char *scratch_ptr, size_t scratch_bytes) const
+                              char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const
 {
 #ifdef DEBUG_CORE
   // Validate graph_index
@@ -727,10 +726,10 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   //   output[i].first = timestep;
   //   output[i].second = point;
   // }
-  if (scratch_bytes > 0) {
-    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
-    assert(*scratch == MAGIC_VALUE);
-  }
+  // if (scratch_bytes > 0) {
+  //   uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+  //   assert(*scratch == MAGIC_VALUE);
+  // }
 
   // Execute kernel
   if (starpu_cuda == 0) {
@@ -738,7 +737,7 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
     k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
   } else {
     GPUKernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, inhandle);
   }
 }
 

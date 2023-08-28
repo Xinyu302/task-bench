@@ -22,6 +22,7 @@
 #include <array>
 #include <starpu_mpi.h>
 #include <starpu_profiling.h>
+#include <starpu_cublas_v2.h>
 #include "data.h"
 #include "core.h"
 #include "timer.h"
@@ -71,9 +72,9 @@ static void task1(void *descr[], void *cl_arg, int starpu_cuda)
   size_t input_bytes[] = {
     output_bytes,
   };
-  
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 1, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 1, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -103,9 +104,9 @@ static void task2(void *descr[], void *cl_arg, int starpu_cuda)
   size_t input_bytes[] = {
     output_bytes,
   };
-  
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -138,9 +139,9 @@ static void task3(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -176,9 +177,9 @@ static void task4(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 3, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 3, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -218,9 +219,9 @@ static void task5(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 4, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 4, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -263,9 +264,9 @@ static void task6(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 5, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 5, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -311,9 +312,9 @@ static void task7(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 6, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 6, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -364,9 +365,9 @@ static void task8(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
   };
   
-  
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 7, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 7, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -419,9 +420,9 @@ static void task9(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 8, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 8, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -477,9 +478,9 @@ static void task10(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 9, extra_local_memory[tid], graph->scratch_bytes_per_task);
+                       input_data, input_bytes, 9, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -491,55 +492,96 @@ static void task10(void *descr[], void *cl_arg, int starpu_cuda)
 #endif
 }
 
+static void mysync() 
+{
+    cudaError_t err = cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    if (err != cudaSuccess) {
+      printf("Error synchronizing the stream: %s\n", cudaGetErrorString(err));
+    }
+}
+
+static void check_stream() 
+{
+    cudaStream_t stream = starpu_cuda_get_local_stream();
+    cudaError_t status = cudaStreamQuery(stream);
+    if (status == cudaSuccess) {
+        printf("All operations in the stream are complete.\n");
+    } else if (status == cudaErrorNotReady) {
+        printf("Operations in the stream are still in progress.\n");
+    } else {
+        printf("Error querying the stream: %s\n", cudaGetErrorString(status));
+    }
+}
+
 #ifdef STARPU_USE_CUDA
 void task1_cuda(void *descr[], void *cl_arg) 
 {
   task1(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task2_cuda(void *descr[], void *cl_arg) 
 {
   task2(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task3_cuda(void *descr[], void *cl_arg) 
 {
   task3(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task4_cuda(void *descr[], void *cl_arg) 
 {
   task4(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task5_cuda(void *descr[], void *cl_arg) 
 {
   task5(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task6_cuda(void *descr[], void *cl_arg) 
 {
   task6(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task7_cuda(void *descr[], void *cl_arg) 
 {
   task7(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task8_cuda(void *descr[], void *cl_arg) 
 {
   task8(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task9_cuda(void *descr[], void *cl_arg) 
 {
   task9(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 
 void task10_cuda(void *descr[], void *cl_arg) 
 {
   task10(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
 }
 #endif
 
@@ -793,7 +835,7 @@ void StarPUApp::parse_argument(int argc, char **argv)
   }
 }
 
-starpu_perfmodel perfmodels[10];
+static starpu_perfmodel perfmodels[10];
 char *symbol[10] = {"task1_pm", "task2_pm", "task3_pm", "task4_pm", "task5_pm", "task6_pm", "task7_pm", "task8_pm", "task9_pm", "task10_pm"};
 
 static starpu_perfmodel * init_starpu_perfmodel(int index) {
@@ -809,9 +851,9 @@ StarPUApp::StarPUApp(int argc, char **argv)
   : App(argc, argv)
 {
   init(); // init cublas
-  starpu_cublas_init();
   cl_task1.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task1.cpu_funcs[0]  = task1_cpu;                                       
+  cl_task1.cpu_funcs_name[0] = "task1_cpu",
   cl_task1.cuda_funcs[0]  = task1_cuda;
   cl_task1.nbuffers  = 1;                                           
   cl_task1.name      = "task1";
@@ -819,6 +861,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task2.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task2.cpu_funcs[0]  = task2_cpu;                                       
+  cl_task2.cpu_funcs_name[0] = "task2_cpu",
   cl_task2.cuda_funcs[0]  = task2_cuda;
   cl_task2.nbuffers  = 2;                                           
   cl_task2.name      = "task2";
@@ -826,6 +869,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task3.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task3.cpu_funcs[0]  = task3_cpu;                                       
+  cl_task3.cpu_funcs_name[0] = "task3_cpu",
   cl_task3.cuda_funcs[0]  = task3_cuda;
   cl_task3.nbuffers  = 3;                                           
   cl_task3.name      = "task3";
@@ -833,6 +877,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task4.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task4.cpu_funcs[0]  = task4_cpu;                                       
+  cl_task4.cpu_funcs_name[0] = "task4_cpu",
   cl_task4.cuda_funcs[0]  = task4_cuda;
   cl_task4.nbuffers  = 4;                                           
   cl_task4.name      = "task4";
@@ -840,6 +885,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task5.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task5.cpu_funcs[0]  = task5_cpu;                                       
+  cl_task5.cpu_funcs_name[0] = "task5_cpu",
   cl_task5.cuda_funcs[0]  = task5_cuda;
   cl_task5.nbuffers  = 5;                                           
   cl_task5.name      = "task5";
@@ -847,6 +893,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
 
   cl_task6.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task6.cpu_funcs[0]  = task6_cpu;                                       
+  cl_task6.cpu_funcs_name[0] = "task6_cpu",
   cl_task6.cuda_funcs[0]  = task6_cuda;
   cl_task6.nbuffers  = 6;                                           
   cl_task6.name      = "task6";
@@ -854,6 +901,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task7.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task7.cpu_funcs[0]  = task7_cpu;                                       
+  cl_task7.cpu_funcs_name[0] = "task7_cpu",
   cl_task7.cuda_funcs[0]  = task7_cuda;
   cl_task7.nbuffers  = 7;                                           
   cl_task7.name      = "task7";
@@ -861,6 +909,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
 
   cl_task8.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task8.cpu_funcs[0]  = task8_cpu;                                       
+  cl_task8.cpu_funcs_name[0] = "task8_cpu",
   cl_task8.cuda_funcs[0]  = task8_cuda;
   cl_task8.nbuffers  = 8;                                           
   cl_task8.name      = "task8";
@@ -868,6 +917,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task9.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task9.cpu_funcs[0]  = task9_cpu;                                       
+  cl_task9.cpu_funcs_name[0] = "task9_cpu",
   cl_task9.cuda_funcs[0]  = task9_cuda;
   cl_task9.nbuffers  = 9;                                           
   cl_task9.name      = "task9";
@@ -875,6 +925,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   cl_task10.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task10.cpu_funcs[0]  = task10_cpu;                                       
+  cl_task10.cpu_funcs_name[0] = "task10_cpu",
   cl_task10.cuda_funcs[0]  = task10_cuda;
   cl_task10.nbuffers  = 10;                                           
   cl_task10.name      = "task10";
@@ -904,6 +955,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_init");
   ret = starpu_mpi_init(&argc, &argv, 1);
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_mpi_init");
+  starpu_cublas_init();
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
   starpu_mpi_comm_size(MPI_COMM_WORLD, &world);
   

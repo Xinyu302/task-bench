@@ -17,6 +17,7 @@
 #define CORE_H
 
 #include "core_c.h"
+#include <cublas_v2.h>
 
 #include <string>
 #include <vector>
@@ -43,7 +44,7 @@ struct GPUKernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes) const;
+               char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const;
   friend struct TaskGraph;
 
 };
@@ -84,7 +85,7 @@ struct TaskGraph : public task_graph_t {
                      char *output_ptr, size_t output_bytes,
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
-                     char *scratch_ptr, size_t scratch_bytes) const;
+                     char *scratch_ptr, size_t scratch_bytes, cublasHandle_t handle) const;
   static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 
