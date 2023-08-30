@@ -843,7 +843,7 @@ static starpu_perfmodel * init_starpu_perfmodel(int index) {
   model->symbol = symbol[index];
 	model->type = STARPU_HISTORY_BASED;
 
-	starpu_perfmodel_init(model);
+	// starpu_perfmodel_init(model);
   return model;
 }
 
