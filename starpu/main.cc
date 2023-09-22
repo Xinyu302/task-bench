@@ -940,7 +940,6 @@ StarPUApp::StarPUApp(int argc, char **argv)
   starpu_schedule = "lws";
   
   parse_argument(argc, argv);
-  printf("not error here\n");
   
   conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
   starpu_conf_init( conf );
