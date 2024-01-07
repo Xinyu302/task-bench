@@ -418,6 +418,47 @@ size_t TaskGraph::num_reverse_dependencies(long dset, long point) const
   return SIZE_MAX;
 }
 
+std::vector<int> get_certain_random_numbers_by_number(int x, int start, int end, int num) {
+  // the random numbers are in [start, end)
+  // and the randoms numbers should be relevent to x
+  // and the number of random numbers is num
+  std::unordered_set<int> random_numbers;
+  for (int i = 0; i < num; i++) {
+    int random_number = rand();
+    random_number = random_number % (end - start) + start;
+    while (random_numbers.find(random_number) != random_numbers.end()) {
+      random_number = rand();
+      random_number = random_number % (end - start) + start;
+    }
+    random_numbers.insert(random_number);
+  }
+  return std::vector<int>(random_numbers.begin(), random_numbers.end());
+}
+
+// t for timestamp. d. Since we want to get the task number of last timestep, we need to get the offset of last timestep.
+std::vector<std::pair<long, long> > TaskGraph::random_dependencies(long dset, long point, int t) {
+  // size_t count = num_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = random_dependencies(dset, point, deps.data(), t);
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
+
+size_t TaskGraph::random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) {
+  if (dependence != DependenceType::RANDOM_NEAREST) {
+    return dependencies(dset, point, deps);
+  }
+  size_t idx = 0;
+  assert(t >= 1);
+  long last_width = width_at_timestep(t - 1);
+  std::vector<int> random_numbers = get_certain_random_numbers_by_number(point, 0, last_width, radix);
+  for (int i = 0; i < random_numbers.size(); i++) {
+    deps[idx++] = std::pair<long, long>(random_numbers[i], random_numbers[i]);
+  }
+  return idx;
+}
+
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
 {
   size_t count = num_dependencies(dset, point);
