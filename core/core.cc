@@ -21,6 +21,7 @@
 #include <atomic>
 #include <algorithm>
 #include <map>
+#include <unordered_set>
 #include <set>
 #include <string>
 #include <math.h>
@@ -140,6 +141,7 @@ static const std::map<std::string, DependenceType> dtype_by_name = {
   {"spread", DependenceType::SPREAD},
   {"random_nearest", DependenceType::RANDOM_NEAREST},
   {"random_spread", DependenceType::RANDOM_SPREAD},
+  {"cholesky_like_random", DependenceType::CHOLESKY_LIKE_RANDOM},
 };
 
 static std::map<DependenceType, std::string> make_name_by_dtype()
@@ -179,10 +181,16 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
     return 0;
   default:
     assert(false && "unexpected dependence type");
   };
+}
+
+static long getWidthOfCholeskyLikeRandom(long timestep) {
+  static long time2width[100] = {0};
+  return time2width[timestep];
 }
 
 long TaskGraph::width_at_timestep(long timestep) const
@@ -209,6 +217,8 @@ long TaskGraph::width_at_timestep(long timestep) const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return max_width;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return getWidthOfCholeskyLikeRandom(timestep);
   default:
     assert(false && "unexpected dependence type");
   };
@@ -233,6 +243,8 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return period;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return 1;
   default:
     assert(false && "unexpected dependence type");
   };
@@ -264,6 +276,8 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return timestep % max_dependence_sets();
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return 0;
   default:
     assert(false && "unexpected dependence type");
   };
@@ -418,7 +432,7 @@ size_t TaskGraph::num_reverse_dependencies(long dset, long point) const
   return SIZE_MAX;
 }
 
-std::vector<int> get_certain_random_numbers_by_number(int x, int start, int end, int num) {
+static std::vector<int> get_certain_random_numbers_by_number(int x, int start, int end, int num) {
   // the random numbers are in [start, end)
   // and the randoms numbers should be relevent to x
   // and the number of random numbers is num
@@ -436,8 +450,8 @@ std::vector<int> get_certain_random_numbers_by_number(int x, int start, int end,
 }
 
 // t for timestamp. d. Since we want to get the task number of last timestep, we need to get the offset of last timestep.
-std::vector<std::pair<long, long> > TaskGraph::random_dependencies(long dset, long point, int t) {
-  // size_t count = num_dependencies(dset, point);
+std::vector<std::pair<long, long> > TaskGraph::random_dependencies(long dset, long point, int t) const {
+  size_t count = num_dependencies(dset, point);
   std::vector<std::pair<long, long> > deps(count);
   size_t actual_count = random_dependencies(dset, point, deps.data(), t);
   assert(actual_count <= count);
@@ -445,7 +459,7 @@ std::vector<std::pair<long, long> > TaskGraph::random_dependencies(long dset, lo
   return deps;
 }
 
-size_t TaskGraph::random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) {
+size_t TaskGraph::random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) const {
   if (dependence != DependenceType::RANDOM_NEAREST) {
     return dependencies(dset, point, deps);
   }

@@ -64,6 +64,7 @@ struct TaskGraph : public task_graph_t {
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
+  std::vector<std::pair<long, long> > random_dependencies(long dset, long point, int t) const;
 
   // Same as above, but using user-supplied buffer. Returns number of
   // elements written. WARNING: If more elements are written than can
@@ -71,6 +72,7 @@ struct TaskGraph : public task_graph_t {
   // to figure out how large of a buffer to alloate.
   size_t reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const;
   size_t dependencies(long dset, long point, std::pair<long, long> *deps) const;
+  size_t random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) const;
 
   // Note: May over-approximate the number of dependencies.
   size_t num_reverse_dependencies(long dset, long point) const;
