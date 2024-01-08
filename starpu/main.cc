@@ -1046,6 +1046,10 @@ void StarPUApp::execute_main_loop()
     }
   }
 
+  // if DependencyType::USER_DEFINED, we need to initialize the data for the first timestep
+  // Now, graph.size() always equals to 1
+  // TODO: implement this. Read from file, and call setDependenceFromPreSet
+
   /* start timer */
   starpu_mpi_barrier(MPI_COMM_WORLD);
   if (rank == 0) {
@@ -1128,13 +1132,21 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         args[num_args++] = output;
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
-        for (std::pair<long, long> dep : deps) {
-          for (int i = dep.first; i <= dep.second; i++) {
-            if (i >= last_offset && i < last_offset + last_width) {
-              args[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i );
-            }
+        if (g.dependence != DependenceType::USER_DEFINED) {
+          for (std::pair<long, long> dep : deps) {
+            long last_time_step = dep.first;
+            long last_point = dep.second;
+            args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step-1)%nb_fields, last_point);
           }
-          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+        } else {
+          for (std::pair<long, long> dep : deps) {
+            for (int i = dep.first; i <= dep.second; i++) {
+              if (i >= last_offset && i < last_offset + last_width) {
+                args[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i );
+              }
+            }
+            debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          }
         }
       }
     }

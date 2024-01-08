@@ -109,6 +109,7 @@ static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 long long count_flops_per_task(const TaskGraph &g, long timestep, long point);
 long long count_bytes_per_task(const TaskGraph &g, long timestep, long point);
+void setDependenceFromPreSet(long timestep, long point, std::vector<std::pair<long, long> > &deps);
 
 void init();
 

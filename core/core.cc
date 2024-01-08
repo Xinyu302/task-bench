@@ -36,6 +36,65 @@ typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
 #endif
 
+
+// Only for pairs of std::hash-able types for simplicity.
+// You can of course template this struct to allow other hash functions
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+
+        // Mainly for demonstration purposes, i.e. works but is overly simple
+        // In the real world, use sth. like boost.hash_combine
+        return h1 ^ h2;  
+    }
+};
+
+using DependenceResultType = std::vector<std::pair<long, long> >;
+using DependenceKeyType = std::pair<long, long>;
+using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
+
+static DependenceMapType dependence_map;
+static std::unordered_map<long, std::set<long> > timestep2point;
+
+static DependenceResultType getDependenceFromPreSet(long t, long point) {
+  DependenceKeyType key = std::make_pair(t, point);
+  if (dependence_map.find(key) != dependence_map.end()) {
+    return dependence_map[key];
+  }
+  return DependenceResultType();
+}
+
+void setDependenceFromPreSet(long t, long point, DependenceResultType& result) {
+  DependenceKeyType key = std::make_pair(t, point);
+  assert(dependence_map.find(key) == dependence_map.end());
+  if (timestep2point.find(t) == timestep2point.end()) {
+    timestep2point[t] = std::set<long>();
+  }
+  assert(timestep2point[t].find(point) == timestep2point[t].end());
+  timestep2point[t].insert(point);
+  dependence_map[key] = result;
+}
+
+static long getUserDefineWidthAtTimestep(long timestep) {
+  return timestep2point[timestep].size();
+}
+
+static long getUserDefineMaxWidth() {
+  // use cache
+  static long maxMaxWidth = -1;
+  if (maxMaxWidth != -1) {
+    return maxMaxWidth;
+  }
+  long max_width = 0;
+  for (auto& timestep : timestep2point) {
+    max_width = std::max(max_width, (long)timestep.second.size());
+  }
+  maxMaxWidth = max_width;
+  return max_width;
+}
+
 static bool needs_period(DependenceType dtype) {
   return dtype == DependenceType::SPREAD || dtype == DependenceType::RANDOM_NEAREST;
 }
@@ -185,6 +244,7 @@ static const std::map<std::string, DependenceType> dtype_by_name = {
   {"random_nearest", DependenceType::RANDOM_NEAREST},
   {"random_spread", DependenceType::RANDOM_SPREAD},
   {"cholesky_like_random", DependenceType::CHOLESKY_LIKE_RANDOM},
+  {"user_defined", DependenceType::USER_DEFINED},
 };
 
 static std::map<DependenceType, std::string> make_name_by_dtype()
@@ -225,6 +285,7 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
   case DependenceType::CHOLESKY_LIKE_RANDOM:
+  case DependenceType::USER_DEFINED:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -262,6 +323,8 @@ long TaskGraph::width_at_timestep(long timestep) const
     return max_width;
   case DependenceType::CHOLESKY_LIKE_RANDOM:
     return getWidthOfCholeskyLikeRandom(timestep);
+  case DependenceType::USER_DEFINED:
+    return getUserDefineWidthAtTimestep(timestep);
   default:
     assert(false && "unexpected dependence type");
   };
@@ -650,6 +713,10 @@ size_t TaskGraph::num_dependencies(long dset, long point) const
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
     return radix;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return 1;
+  case DependenceType::USER_DEFINED:
+    return getUserDefineMaxWidth();
   default:
     assert(false && "unexpected dependence type");
   };

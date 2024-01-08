@@ -38,6 +38,7 @@ typedef enum dependence_type_t {
   RANDOM_NEAREST,
   RANDOM_SPREAD,
   CHOLESKY_LIKE_RANDOM,
+  USER_DEFINED,
 } dependence_type_t;
 
 typedef enum kernel_type_t {
