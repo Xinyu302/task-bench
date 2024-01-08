@@ -50,6 +50,7 @@ typedef enum kernel_type_t {
   COMPUTE_BOUND2,
   IO_BOUND,
   LOAD_IMBALANCE,
+  CUSTOMIZE,
 } kernel_type_t;
 
 typedef struct kernel_t {

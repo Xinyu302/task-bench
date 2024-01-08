@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <thread>
 
 #if (__AVX2__ == 1) || (__AVX__ == 1)
 #include <immintrin.h>
@@ -442,4 +443,16 @@ double execute_kernel_imbalance(const Kernel &kernel,
   k.iterations = iterations;
   // printf("iteration %ld\n", iterations);
   return execute_kernel_compute(k);
+}
+
+void execute_kernel_customize(const Kernel &kernel, double expect_runtime)
+{
+  // Need to sleep for the expected time, use milliseconds
+  std::this_thread::sleep_for(std::chrono::microseconds((long)(expect_runtime * 1000)));
+}
+
+void execute_kernel_customize_cuda(const GPUKernel &kernel, double expect_runtime)
+{
+  // Need to sleep for the expected time, use milliseconds
+  std::this_thread::sleep_for(std::chrono::microseconds((long)(expect_runtime * 1000)));
 }

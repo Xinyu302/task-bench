@@ -34,7 +34,7 @@ struct Kernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes) const;
+               char *scratch_ptr, size_t scratch_bytes, size_t input_nums = 0) const;
   friend struct TaskGraph;
 };
 
@@ -44,7 +44,7 @@ struct GPUKernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const;
+               char *scratch_ptr, size_t scratch_bytes, size_t input_nums = 0, cublasHandle_t inhandle = nullptr) const;
   friend struct TaskGraph;
 
 };

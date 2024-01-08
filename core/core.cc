@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <map>
 #include <unordered_set>
+#include <unordered_map>
 #include <set>
 #include <string>
 #include <math.h>
@@ -39,8 +40,42 @@ static bool needs_period(DependenceType dtype) {
   return dtype == DependenceType::SPREAD || dtype == DependenceType::RANDOM_NEAREST;
 }
 
+// A static map, the first key is the num_args, which means how many arguments the kernel has.
+// The second key is whether the kernel is a GPU kernel or not.
+// The value is the expect execution time of the kernel.
+static std::unordered_map<int, std::unordered_map<bool, double>> kernel_expect_execution_time = {
+  {1, {{false, 10.000000}, {true, 5.000000}}},
+  {2, {{false, 10.000000}, {true, 5.000000}}},
+  {3, {{false, 10.000000}, {true, 5.000000}}},
+  {4, {{false, 10.000000}, {true, 5.000000}}},
+  {5, {{false, 10.000000}, {true, 5.000000}}},
+  {6, {{false, 10.000000}, {true, 5.000000}}},
+  {7, {{false, 10.000000}, {true, 5.000000}}},
+  {8, {{false, 10.000000}, {true, 5.000000}}},
+  {9, {{false, 10.000000}, {true, 5.000000}}},
+  {10, {{false, 10.000000}, {true, 5.000000}}},
+};
+
+static std::unordered_map<int, double> kernel_flops = {
+  {1, 0.000000},
+  {2, 0.000000},
+  {3, 0.000000},
+  {4, 0.000000},
+  {5, 0.000000},
+  {6, 0.000000},
+  {7, 0.000000},
+  {8, 0.000000},
+  {9, 0.000000},
+  {10, 0.000000},
+};
+
+static double get_expect_kernel_execution_time(int num_args, bool is_gpu_kernel) {
+  return kernel_expect_execution_time[num_args][is_gpu_kernel];
+}
+
+
 void GPUKernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const {
+                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums, cublasHandle_t inhandle) const {
   switch (type)
   {
   case KernelType::EMPTY:
@@ -52,13 +87,17 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
   case KernelType::MEMORY_DAXPY:
     execute_kernel_daxpy_cuda(*this, scratch_ptr, scratch_bytes, timestep);
     break;
+  case KernelType::CUSTOMIZE:
+    execute_kernel_customize_cuda(*this, get_expect_kernel_execution_time(input_nums + 1, true));
+    break;
   default:
+    assert(false && "unimplemented kernel type");
     break;
   }                     
 }
 
 void Kernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes) const
+                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -95,6 +134,9 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+  case KernelType::CUSTOMIZE:
+    execute_kernel_customize(*this, get_expect_kernel_execution_time(input_nums + 1, false));
+    break;
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -110,6 +152,7 @@ static const std::map<std::string, KernelType> ktype_by_name = {
   {"compute_bound2", KernelType::COMPUTE_BOUND2},
   {"io_bound", KernelType::IO_BOUND},
   {"load_imbalance", KernelType::LOAD_IMBALANCE},
+  {"customize", KernelType::CUSTOMIZE},
 };
 
 static std::map<KernelType, std::string> make_name_by_ktype()
@@ -789,10 +832,10 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   // Execute kernel
   if (starpu_cuda == 0) {
     Kernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs);
   } else {
     GPUKernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, inhandle);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs, inhandle);
   }
 }
 
@@ -1252,6 +1295,9 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::IO_BOUND:
     return 0;
 
+  case KernelType::CUSTOMIZE:
+    return 0;
+
   case KernelType::LOAD_IMBALANCE:
   {
     long iterations = select_imbalance_iterations(g.kernel, g.graph_index, timestep, point);
@@ -1282,6 +1328,7 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
+  case KernelType::CUSTOMIZE:
     return 0;
   default:
     assert(false && "unimplemented kernel type");

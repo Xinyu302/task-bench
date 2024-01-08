@@ -57,4 +57,6 @@ long select_imbalance_iterations(const Kernel &kernel,
 double execute_kernel_imbalance(const Kernel &kernel,
                                 long graph_index, long timestep, long point);
 
+void execute_kernel_customize(const Kernel &kernel, double expect_runtime);
+void execute_kernel_customize_cuda(const GPUKernel &kernel, double expect_runtime);
 #endif
