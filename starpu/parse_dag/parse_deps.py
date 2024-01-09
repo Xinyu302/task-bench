@@ -1,6 +1,13 @@
 import os
 import copy
 
+
+'''
+    Parse dag file to get dependency
+    Usage:
+        task_info = TaskInfo(dag_file)
+        task_info.get_dep()
+'''
 class TaskInfo:
     def __init__(self, dag_file):
         self.dag_file = dag_file
@@ -13,13 +20,14 @@ class TaskInfo:
         self.has_input = set()
         self.task2input = {} # task -> input
         self.task2input_copy = {} # task -> input
+        self.summary()
 
     def __str__(self):
         return 'dag_file: {}\nall_task: {}\ninput_task: {}\noutput_task: {}\ntask2output: {}\ntag2task: {}\ntask2tag: {}\nhas_input: {}'.format(
             self.dag_file, self.all_task, self.input_task, self.output_task, self.task2output, self.tag2task, self.task2tag, self.has_input
         )
 
-    def parse_dag(self):
+    def _parse_dag(self):
         with open(self.dag_file, 'r') as f:
             lines = f.readlines()
             parse_tag = True
@@ -70,7 +78,7 @@ class TaskInfo:
             self.input_task = set(self.all_task) - self.has_input
             self.task2input_copy = copy.deepcopy(self.task2input)
 
-    def topo_sort(self):
+    def _topo_sort(self):
         # topo sort
         # 1. find all task with no input
         # 2. remove the task from the graph
@@ -99,13 +107,20 @@ class TaskInfo:
         for layer in layer_topo_order:
             topo_order.extend(layer)
         return layer_topo_order, topo_order
+    
+    def _get_dep(self, task):
+        if task in self.input_task:
+            return (-1, -1)
+        return [self.task2index[input] for input in self.task2input_copy[task]]
 
     def get_dep(self):
-        return self.task2input_copy
+        # map layer_topo_order, element transform to self.task2index[self.task2input_copy[element]]
+        return [[self._get_dep(task) for task in layer] for layer in self.layer_topo_order]
 
     def summary(self):
-        self.parse_dag()
-        self.layer_topo_order, _ = self.topo_sort()
+        self._parse_dag()
+        self.layer_topo_order, _ = self._topo_sort()
+        self._reindex_task()
 
     def get_timestamp(self):
         return len(self.layer_topo_order)
@@ -116,7 +131,7 @@ class TaskInfo:
     def get_task_of_timestamp(self, t):
         return self.layer_topo_order[t]
         
-    def reindex_task(self):
+    def _reindex_task(self):
         # reindex from typo_layer_order
         # return task2index
         task2index = {}
@@ -126,16 +141,15 @@ class TaskInfo:
             for w, task in enumerate(layer):
                 task2index[task] = (t, w)
                 index2task[(t, w)] = task
-
-        return task2index, index2task
-        
+        self.task2index = task2index
     
 
 if __name__ == '__main__':
     pwd = os.getcwd()
     dag_file = os.path.join(pwd, "dag_dot_prof_file_3840_dmda.txt")
     task_info = TaskInfo(dag_file)
-    task_info.parse_dag()
+    print(task_info)
+    print(task_info.get_dep())
     # print(task_info)
     # layer_topo_order, topo_order = task_info.topo_sort()
     # print(layer_topo_order)
