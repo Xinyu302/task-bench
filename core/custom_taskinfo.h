@@ -38,6 +38,7 @@ public:
         return result;
     }
 
+
     int get_timestamp() const {
         return layer_topo_order.size();
     }

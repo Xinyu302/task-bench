@@ -21,6 +21,7 @@
 
 #include <string>
 #include <vector>
+class TaskInfo;
 
 typedef dependence_type_t DependenceType;
 
@@ -60,6 +61,13 @@ struct TaskGraph : public task_graph_t {
   // number of timesteps after which the pattern of dependence sets repeats itself
   long timestep_period() const;
   long dependence_set_at_timestep(long timestep) const;
+
+  // only can be called when dependence type is USER_DEFINED
+  void set_task_info(std::string task_info_file);
+  void destroy_task_info() const;
+  std::vector<std::pair<long, long>> getDependenceFromTaskInfo(long t, long point) const;
+  long getUserDefineWidthAtTimestep(long timestep) const;
+  long getUserDefineMaxWidth() const;
 
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;

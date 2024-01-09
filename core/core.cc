@@ -58,22 +58,18 @@ using DependenceResultType = std::vector<std::pair<long, long> >;
 using DependenceKeyType = std::pair<long, long>;
 using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
 
-static TaskInfo *task_info = nullptr;
-
-long set_task_info(std::string task_info_file) {
+void TaskGraph::set_task_info(std::string task_info_file) {
   task_info = new TaskInfo(task_info_file);
-  return task_info->get_timestamp();
+  nb_fields = task_info->get_timestamp();
+  timesteps = nb_fields;
+  max_width = task_info->get_max_width();
 }
 
-void destroy_task_info() {
+void TaskGraph::destroy_task_info() const {
   delete task_info;
-  task_info = nullptr;
 }
 
-// static DependenceMapType dependence_map;
-// static std::unordered_map<long, std::set<long> > timestep2point;
-
-static TaskInfo::TaskDep getDependenceFromTaskInfo(long t, long point) {
+TaskInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
   assert (task_info != nullptr);
   static TaskInfo::GraphDep graph_dep = task_info->get_dep();
   return graph_dep[t][point];
@@ -90,13 +86,13 @@ static TaskInfo::TaskDep getDependenceFromTaskInfo(long t, long point) {
 //   dependence_map[key] = result;
 // }
 
-static long getUserDefineWidthAtTimestep(long timestep) {
+long TaskGraph::getUserDefineWidthAtTimestep(long timestep) const {
   assert (task_info != nullptr);
   return task_info->get_width_of_timestamp(timestep);
   // return timestep2point[timestep].size();
 }
 
-static long getUserDefineMaxWidth() {
+long TaskGraph::getUserDefineMaxWidth() const {
   assert (task_info != nullptr);
   return task_info->get_max_width();
 }
@@ -1501,21 +1497,29 @@ void App::report_timing(double elapsed_seconds) const
           node_first = point_node * g.max_width / nodes;
           node_last = (point_node + 1) * g.max_width / nodes - 1;
         }
-
-        auto deps = g.dependencies(dset, p);
-        for (auto dep : deps) {
-          long dep_first, dep_last;
-          std::tie(dep_first, dep_last) = clamp(dep.first, dep.second, last_offset, last_offset + last_width - 1);
-          num_deps += dep_last - dep_first + 1;
-          if (nodes > 0) {
-            long initial_first, initial_last, local_first, local_last, final_first, final_last;
-            std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
-            std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
-            std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
-            nonlocal_deps += initial_last - initial_first + 1;
-            local_deps += local_last - local_first + 1;
-            nonlocal_deps += final_last - final_first + 1;
+        TaskInfo::TaskDep deps;
+        if (g.dependence != DependenceType::USER_DEFINED) {
+          deps = g.dependencies(dset, p);
+        } else {
+          deps = g.user_defined_dependencies(t, p);
+        }
+        if (g.dependence != DependenceType::USER_DEFINED) {
+          for (auto dep : deps) {
+            long dep_first, dep_last;
+            std::tie(dep_first, dep_last) = clamp(dep.first, dep.second, last_offset, last_offset + last_width - 1);
+            num_deps += dep_last - dep_first + 1;
+            if (nodes > 0) {
+              long initial_first, initial_last, local_first, local_last, final_first, final_last;
+              std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
+              std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
+              std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
+              nonlocal_deps += initial_last - initial_first + 1;
+              local_deps += local_last - local_first + 1;
+              nonlocal_deps += final_last - final_first + 1;
+            }
           }
+        } else {
+          local_deps += deps.size();
         }
       }
     }
