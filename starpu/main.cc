@@ -1149,7 +1149,8 @@ void StarPUApp::execute_timestep(size_t idx, long t)
           for (std::pair<long, long> dep : deps) {
             long last_time_step = dep.first;
             long last_point = dep.second;
-            args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step-1)%nb_fields, last_point);
+            std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
+            args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step)%nb_fields, last_point);
           }
         } else {
           for (std::pair<long, long> dep : deps) {
