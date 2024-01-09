@@ -65,6 +65,7 @@ struct TaskGraph : public task_graph_t {
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > random_dependencies(long dset, long point, int t) const;
+  std::vector<std::pair<long, long> > user_defined_dependencies(int t, long point) const;
 
   // Same as above, but using user-supplied buffer. Returns number of
   // elements written. WARNING: If more elements are written than can
@@ -109,7 +110,9 @@ static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 long long count_flops_per_task(const TaskGraph &g, long timestep, long point);
 long long count_bytes_per_task(const TaskGraph &g, long timestep, long point);
-void setDependenceFromPreSet(long timestep, long point, std::vector<std::pair<long, long> > &deps);
+
+void set_task_info(std::string task_info_file);
+void destroy_task_info();
 
 void init();
 

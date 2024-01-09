@@ -30,6 +30,9 @@
 #include "core.h"
 #include "core_kernel.h"
 #include "core_random.h"
+#include "custom_taskinfo.h"
+
+#define USER_DEFINED_DEBUG
 
 #ifdef DEBUG_CORE
 typedef unsigned long long TaskGraphMask;
@@ -55,44 +58,47 @@ using DependenceResultType = std::vector<std::pair<long, long> >;
 using DependenceKeyType = std::pair<long, long>;
 using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
 
-static DependenceMapType dependence_map;
-static std::unordered_map<long, std::set<long> > timestep2point;
+static TaskInfo *task_info = nullptr;
 
-static DependenceResultType getDependenceFromPreSet(long t, long point) {
-  DependenceKeyType key = std::make_pair(t, point);
-  if (dependence_map.find(key) != dependence_map.end()) {
-    return dependence_map[key];
-  }
-  return DependenceResultType();
+void set_task_info(std::string task_info_file) {
+  std::cout << "here called!" << std::endl;
+  task_info = new TaskInfo(task_info_file);
 }
 
-void setDependenceFromPreSet(long t, long point, DependenceResultType& result) {
-  DependenceKeyType key = std::make_pair(t, point);
-  assert(dependence_map.find(key) == dependence_map.end());
-  if (timestep2point.find(t) == timestep2point.end()) {
-    timestep2point[t] = std::set<long>();
-  }
-  assert(timestep2point[t].find(point) == timestep2point[t].end());
-  timestep2point[t].insert(point);
-  dependence_map[key] = result;
+void destroy_task_info() {
+  delete task_info;
+  task_info = nullptr;
 }
+
+// static DependenceMapType dependence_map;
+// static std::unordered_map<long, std::set<long> > timestep2point;
+
+static TaskInfo::TaskDep getDependenceFromTaskInfo(long t, long point) {
+  assert (task_info != nullptr);
+  static TaskInfo::GraphDep graph_dep = task_info->get_dep();
+  return graph_dep[t][point];
+}
+
+// void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {
+//   DependenceKeyType key = std::make_pair(t, point);
+//   assert(dependence_map.find(key) == dependence_map.end());
+//   if (timestep2point.find(t) == timestep2point.end()) {
+//     timestep2point[t] = std::set<long>();
+//   }
+//   assert(timestep2point[t].find(point) == timestep2point[t].end());
+//   timestep2point[t].insert(point);
+//   dependence_map[key] = result;
+// }
 
 static long getUserDefineWidthAtTimestep(long timestep) {
-  return timestep2point[timestep].size();
+  assert (task_info != nullptr);
+  return task_info->get_width_of_timestamp(timestep);
+  // return timestep2point[timestep].size();
 }
 
 static long getUserDefineMaxWidth() {
-  // use cache
-  static long maxMaxWidth = -1;
-  if (maxMaxWidth != -1) {
-    return maxMaxWidth;
-  }
-  long max_width = 0;
-  for (auto& timestep : timestep2point) {
-    max_width = std::max(max_width, (long)timestep.second.size());
-  }
-  maxMaxWidth = max_width;
-  return max_width;
+  assert (task_info != nullptr);
+  return task_info->get_max_width();
 }
 
 static bool needs_period(DependenceType dtype) {
@@ -383,6 +389,7 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::RANDOM_SPREAD:
     return timestep % max_dependence_sets();
   case DependenceType::CHOLESKY_LIKE_RANDOM:
+  case DependenceType::USER_DEFINED:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -577,6 +584,14 @@ size_t TaskGraph::random_dependencies(long dset, long point, std::pair<long, lon
     deps[idx++] = std::pair<long, long>(random_numbers[i], random_numbers[i]);
   }
   return idx;
+}
+
+std::vector<std::pair<long, long> > TaskGraph::user_defined_dependencies(int time, long point) const {
+  assert (dependence == DependenceType::USER_DEFINED && task_info != nullptr);
+  if (time == 0) {
+    return std::vector<std::pair<long, long> >();
+  }
+  return getDependenceFromTaskInfo(time, point);
 }
 
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
@@ -1199,6 +1214,10 @@ App::App(int argc, char **argv)
 
 void App::check() const
 {
+#ifdef USER_DEFINED_DEBUG
+  return;
+#endif
+
 #ifdef DEBUG_CORE
   if (graphs.size() >= sizeof(TaskGraphMask)*8) {
     fprintf(stderr, "error: Can only execute up to %lu task graphs\n", sizeof(TaskGraphMask)*8);

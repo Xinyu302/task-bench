@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <iostream>
 #include <mpi.h>
 #include <math.h>
 #include <array>
@@ -1034,7 +1035,12 @@ void StarPUApp::execute_main_loop()
   /* Initialize data structures before measurement */
   for (int i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
-
+    // if DependencyType::USER_DEFINED, we need to initialize the data for the first timestep
+    // Now, graph.size() always equals to 1
+    // TODO: implement this. Read from file, and call setDependenceFromPreSet
+    if (g.dependence == DependenceType::USER_DEFINED) {
+      set_task_info("/root/task-bench/starpu/parse_dag/dag_dot_prof_file_3840_dmda.txt");
+    }
     for (y = 0; y < g.timesteps; y++) {
       long offset = g.offset_at_timestep(y);
       long width = g.width_at_timestep(y);
@@ -1045,11 +1051,6 @@ void StarPUApp::execute_main_loop()
         starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
     }
   }
-
-  // if DependencyType::USER_DEFINED, we need to initialize the data for the first timestep
-  // Now, graph.size() always equals to 1
-  // TODO: implement this. Read from file, and call setDependenceFromPreSet
-
   /* start timer */
   starpu_mpi_barrier(MPI_COMM_WORLD);
   if (rank == 0) {
@@ -1066,6 +1067,12 @@ void StarPUApp::execute_main_loop()
 
   starpu_task_wait_for_all();
   starpu_mpi_barrier(MPI_COMM_WORLD);
+  for (int i = 0; i < graphs.size(); i++) { 
+    const TaskGraph &g = graphs[i]; 
+    if (g.dependence == DependenceType::USER_DEFINED) {
+      destroy_task_info();
+    }
+  }
   if (rank == 0) {
     double elapsed = Timer::time_end();
     report_timing(elapsed);
@@ -1086,7 +1093,13 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
-    std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
+    std::vector<std::pair<long, long> > deps;
+    if (g.dependence != DependenceType::USER_DEFINED) {
+      deps = g.dependencies(dset, x);
+    } else {
+      deps = g.user_defined_dependencies(t, x);
+    }
+    std::cout << "t = " << t << ", dep size = " << deps.size() << std::endl;
     int num_args; 
     starpu_data_handle_t output = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
@@ -1132,7 +1145,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         args[num_args++] = output;
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
-        if (g.dependence != DependenceType::USER_DEFINED) {
+        if (g.dependence == DependenceType::USER_DEFINED) {
           for (std::pair<long, long> dep : deps) {
             long last_time_step = dep.first;
             long last_point = dep.second;
