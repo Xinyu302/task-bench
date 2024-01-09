@@ -60,9 +60,9 @@ using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResult
 
 static TaskInfo *task_info = nullptr;
 
-void set_task_info(std::string task_info_file) {
-  std::cout << "here called!" << std::endl;
+long set_task_info(std::string task_info_file) {
   task_info = new TaskInfo(task_info_file);
+  return task_info->get_timestamp();
 }
 
 void destroy_task_info() {

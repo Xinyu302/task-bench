@@ -111,7 +111,8 @@ static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 long long count_flops_per_task(const TaskGraph &g, long timestep, long point);
 long long count_bytes_per_task(const TaskGraph &g, long timestep, long point);
 
-void set_task_info(std::string task_info_file);
+// return timesteps
+long set_task_info(std::string task_info_file);
 void destroy_task_info();
 
 void init();
