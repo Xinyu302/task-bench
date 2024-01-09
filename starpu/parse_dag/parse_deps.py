@@ -110,7 +110,7 @@ class TaskInfo:
     
     def _get_dep(self, task):
         if task in self.input_task:
-            return (-1, -1)
+            return [(-1, -1)]
         return [self.task2index[input] for input in self.task2input_copy[task]]
 
     def get_dep(self):
