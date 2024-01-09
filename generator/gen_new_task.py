@@ -3,8 +3,8 @@ import math
 import random
 
 class GenNewTask:
-    def __init__(self, N, W, sigma_N, edge_density, skip_connection_density):
-        self.N = N
+    def __init__(self, V, W, sigma_N, edge_density, skip_connection_density):
+        self.V = V
         self.W = W
         self.sigma_N = sigma_N
         self.edge_density = edge_density
@@ -12,44 +12,140 @@ class GenNewTask:
         self.N_l = []
         self.node2layer = {}
         self.layer2node = {}
-        self.graph = {}
-        self.
+        self.topo_order = []
+        self.coordinate2node = {}
+        self.node2coordinate = {}
+        self.all_node = []
+        self.layer_depth = 0
+        self.node2output = {}
+        self.node2input = {}
+
+    def gen(self):
+        self.algorithm1()
+        compute_node_num = 0
+        for layer_index in range(self.layer_depth):
+            compute_node_num += self.get_layer_width(layer_index)
+            print("layer_index: ", layer_index, "layer_width: ", self.get_layer_width(layer_index))
+        print("compute_node_num: ", compute_node_num)
+        print("V: ", self.V)
+        print("self.topo_order: ", self.topo_order)
+        
+        assert compute_node_num == self.V
+        print(self.coordinate2node)
+        self.algorithm2()
+        self.algorithm3()
+        self.change_node2output()
+        return self.node2output
+
+    def get_edge_num(self):
+        edge_num = 0
+        for node, dst in self.node2output.items():
+            edge_num = edge_num + len(dst)
+        return edge_num
+    
+    def add_edge(self, src, dst):
+        if src not in self.node2output:
+            self.node2output[src] = set()
+        self.node2output[src].add(dst)
+
+    def change_node2output(self):
+        for node, dst in self.node2output.items():
+            self.node2output[node] = list(dst)
 
     def algorithm1(self):
         # input: N 点数 sigma_N 点数可变性
         # output:  graph1
-        L = math.ceil(math.sqrt(self.V * (1/self.W - 1)))
-        
+        L = math.ceil(math.sqrt(self.V * (1 / self.W - 1)))
         l = 0
-        N_counter = 0
+        node_counter = 0
+        jump = False
         while True:
-            N_l = random.randint(math.ceil(self.N/L(1-sigma_N)), math.floor(self.N/L(1+sigma_N)))
-            self.N_l.append(N_l)
-            self.graph
+            layer_node = []
+            N_l = random.randint(math.ceil(self.V / L * (1 - self.sigma_N)), math.floor(self.V / L * (1 + self.sigma_N)))
             for n in range(0, N_l):
-                if N_counter > self.N:
+                if node_counter >= self.V:
+                    jump = True
                     break
-                self.node2layer[] = 
+                self.node2layer[node_counter] = l
+                layer_node.append(node_counter)
+                self.all_node.append(node_counter)
+                self.coordinate2node[(l, n)] = node_counter
+                self.node2coordinate[node_counter] = (l, n)
+                node_counter = node_counter + 1
+            if jump:
+                if n == 0:
+                    break
+                else:
+                    l = l + 1
+                    self.topo_order.append(layer_node)    
+                    self.N_l.append(n)
+                    break
+            else:
+                self.N_l.append(N_l)
             l = l + 1
-        return graph
+            self.topo_order.append(layer_node)    
+        self.layer_depth = l
+    
+    def get_layer_width(self, l):
+        return self.N_l[l]
 
     def algorithm2(self):
         # input: graph1 edge_density 边密度
         # output: graph2
+        for l1 in range(self.layer_depth - 1):
+            l2 = l1 + 1
+            E_l1_l2 = math.ceil(self.get_layer_width(l1) * self.get_layer_width(l2) * edge_density) \
+                + math.ceil((1 - edge_density) * max(self.get_layer_width(l1), self.get_layer_width(l2)))
+            N_l1 = self.get_layer_width(l1)
+            N_l2 = self.get_layer_width(l2)
+            if N_l1 >= N_l2:
+                ls = l1
+                lt = l2
+            else:
+                ls = l2
+                lt = l1
+            cn = [0 for i in range(self.get_layer_width(ls))]
+            while sum(cn) < E_l1_l2:
+                # find the min nums in cn
+                min_num = min(cn)
+                min_num_set = []
+                for i in range(self.get_layer_width(ls)):
+                    if cn[i] == min_num:
+                        min_num_set.append(i)
+                # randomly select one from min_num_set
+                ci_index = random.choice(min_num_set)                        
+                cn[ci_index] = cn[ci_index] + 1
+            for n in range(self.get_layer_width(ls)):
+                if self.get_layer_width(ls) == 1:
+                    nc = 0
+                else:
+                    nc = math.ceil(n * (self.get_layer_width(lt) - 1) / (self.get_layer_width(ls) - 1))
+                for i in range(cn[n]):
+                    nt = [nc - (cn[n] - 1) // 2 + j for j in range(cn[n])]
+                    nt = [num for num in nt if num >= 0 and num < self.get_layer_width(lt)]
+                    for j in nt:
+                        self.add_edge(self.coordinate2node[(ls, n)], self.coordinate2node[(lt, j)])
+
         return 
 
     def algorithm3(self) -> Dict[int, Tuple]:
         # input: graph2 skip_connection_density 跳跃密度 E 边数
         # output: graph3
+        E = self.get_edge_num()
+        L = self.layer_depth
+        if L < 3: # too few layers
+            return
         skip_edge = math.ceil(E * (skip_connection_density) / (1 - skip_connection_density)) # skip_edge 跳跃的边总数
         for i in range(skip_edge):
-            xs = random.randint(1, L - 2) # lm 随机取的层的索引 L 层数
-            xt = random.randint(lm + 2, L)
+            ls = random.randint(0, L - 3) # lm 随机取的层的索引 L 层数
+            lt = random.randint(ls + 2, L - 1)
+            xs = random.uniform(0, 1)
             y = random.uniform(0, 1)
             xt = xs + 0.2 * y
-            xt = min(xt, 0.999)
-            newedge_node1 = int(xs * N_lt) # numN_lm ls层的点数 newedge_node1 新增的边的端点1
-            newedge_node2 = int(xt * N_ls)
+            xt = min(xt, 0.999) # ensure 0 <= xt < 1
+            newedge_node1 = math.floor(xs * self.get_layer_width(ls)) # numN_lm ls层的点数 newedge_node1 新增的边的端点1
+            newedge_node2 = math.floor(xt * self.get_layer_width(lt))
+            self.add_edge(self.coordinate2node[(ls, newedge_node1)], self.coordinate2node[(lt, newedge_node2)])
 
         graph = {}
         '''
@@ -65,13 +161,12 @@ class GenNewTask:
 
 if __name__ == "__main__":
     N = 50
-    W = 10
+    W = 0.3 # W is a float in (0.25, 0.5)
     sigma_N = 0.75
     edge_density = 0.2
     skip_connection_density = 0.14
     newtask = GenNewTask(N, W, sigma_N, edge_density, skip_connection_density)
     
-    graph = newtask.algorithm3()
-    
+    graph = newtask.gen()
     print(graph)
     
