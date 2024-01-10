@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <set>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <queue>
 
 #define DEBUG 0
@@ -64,16 +66,16 @@ public:
 private:
     std::string dag_file;
     std::vector<std::string> all_task;
-    std::set<std::string> input_task;
-    std::set<std::string> output_task;
-    std::map<std::string, std::vector<std::string>> task2output;
-    std::map<std::string, std::string> tag2task;
-    std::map<std::string, std::string> task2tag;
-    std::set<std::string> has_input;
-    std::map<std::string, std::vector<std::string>> task2input;
-    std::map<std::string, std::vector<std::string>> task2input_copy;
+    std::unordered_set<std::string> input_task;
+    std::unordered_set<std::string> output_task;
+    std::unordered_map<std::string, std::vector<std::string>> task2output;
+    std::unordered_map<std::string, std::string> tag2task;
+    std::unordered_map<std::string, std::string> task2tag;
+    std::unordered_set<std::string> has_input;
+    std::unordered_map<std::string, std::vector<std::string>> task2input;
+    std::unordered_map<std::string, std::vector<std::string>> task2input_copy;
     std::vector<std::vector<std::string>> layer_topo_order;
-    std::map<std::string, std::pair<TaskIndexType, TaskIndexType>> task2index;
+    std::unordered_map<std::string, std::pair<TaskIndexType, TaskIndexType>> task2index;
 
     void parse_dag() {
         std::ifstream file(dag_file);
@@ -146,16 +148,17 @@ private:
         }
 
         std::set<std::string> all_task_set(all_task.begin(), all_task.end());
+        std::set<std::string> has_input_set(has_input.begin(), has_input.end());
 
-        std::set_difference(all_task_set.begin(), all_task_set.end(), has_input.begin(), has_input.end(),
+        std::set_difference(all_task_set.begin(), all_task_set.end(), has_input_set.begin(), has_input_set.end(),
                             std::inserter(input_task, input_task.begin()));
 
         task2input_copy = task2input;
     }
 
-    // std::set<T> set_difference(const std::set<T>& set1, const std::set<T>& set2) {
-    //     std::set<T> result;
-    //     std::set_difference(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(result, result.begin()));
+    // std::unordered_set<T> set_difference(const std::unordered_set<T>& set1, const std::unordered_set<T>& set2) {
+    //     std::unordered_set<T> result;
+    //     std::unordered_set_difference(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(result, result.begin()));
     //     return result;
     // }
 
@@ -304,6 +307,15 @@ std::ostream& operator<<(std::ostream& os, const TaskInfo& task_info) {
 
     return os;
 }
+
+class TaskPriority {
+public:
+    TaskPriority(const std::string& pri, const std::string& efi): priority(pri), efficiency(efi) {}
+
+private:
+    std::string priority;
+    std::string efficiency;
+};
 
 #if DEBUG
 int main() {
