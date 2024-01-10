@@ -1,8 +1,8 @@
 SLIB=libcore.a
 DLIB=libcore.so
-OBJS=core.o core_c.o core_kernel.o timer.o
+OBJS=core.o core_c.o core_kernel.o timer.o custom_taskinfo.o
 COBJS=core_random.o siphash.o
-HEADERS=core.h core_c.h core_kernel.h core_random.h timer.h
+HEADERS=core.h core_c.h core_kernel.h core_random.h timer.h custom_taskinfo.h
 
 # Second name for library that can be used to exclusively statically link.
 SLIB_SYMLINK=libcore_s.a
