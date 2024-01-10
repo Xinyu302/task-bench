@@ -122,8 +122,8 @@ class GenNewTask:
         # output: graph2
         for l1 in range(self.layer_depth - 1):
             l2 = l1 + 1
-            E_l1_l2 = math.ceil(self.get_layer_width(l1) * self.get_layer_width(l2) * edge_density) \
-                + math.ceil((1 - edge_density) * max(self.get_layer_width(l1), self.get_layer_width(l2)))
+            E_l1_l2 = int(self.get_layer_width(l1) * self.get_layer_width(l2) * edge_density \
+                + (1 - edge_density) * max(self.get_layer_width(l1), self.get_layer_width(l2)))
             N_l1 = self.get_layer_width(l1)
             N_l2 = self.get_layer_width(l2)
             if N_l1 >= N_l2:
@@ -152,7 +152,10 @@ class GenNewTask:
                     nt = [nc - (cn[n] - 1) // 2 + j for j in range(cn[n])]
                     nt = [num for num in nt if num >= 0 and num < self.get_layer_width(lt)]
                     for j in nt:
-                        self.add_edge(self.coordinate2node[(ls, n)], self.coordinate2node[(lt, j)])
+                        if ls == l1:
+                            self.add_edge(self.coordinate2node[(ls, n)], self.coordinate2node[(lt, j)])
+                        else:
+                            self.add_edge(self.coordinate2node[(lt, j)], self.coordinate2node[(ls, n)])
 
         return 
 
