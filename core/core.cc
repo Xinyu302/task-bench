@@ -59,7 +59,7 @@ using DependenceKeyType = std::pair<long, long>;
 using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
 
 void TaskGraph::set_task_info(std::string task_info_file) {
-  task_info = new TaskInfo(task_info_file);
+  task_info = new TaskDepInfo(task_info_file);
   nb_fields = task_info->get_timestamp();
   timesteps = nb_fields;
   max_width = task_info->get_max_width();
@@ -69,9 +69,9 @@ void TaskGraph::destroy_task_info() const {
   delete task_info;
 }
 
-TaskInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
+TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
   assert (task_info != nullptr);
-  static TaskInfo::GraphDep graph_dep = task_info->get_dep();
+  static TaskDepInfo::GraphDep graph_dep = task_info->get_dep();
   return graph_dep[t][point];
 }
 
@@ -1497,7 +1497,7 @@ void App::report_timing(double elapsed_seconds) const
           node_first = point_node * g.max_width / nodes;
           node_last = (point_node + 1) * g.max_width / nodes - 1;
         }
-        TaskInfo::TaskDep deps;
+        TaskDepInfo::TaskDep deps;
         if (g.dependence != DependenceType::USER_DEFINED) {
           deps = g.dependencies(dset, p);
         } else {

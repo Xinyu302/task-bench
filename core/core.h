@@ -21,7 +21,7 @@
 
 #include <string>
 #include <vector>
-class TaskInfo;
+class TaskDepInfo;
 
 typedef dependence_type_t DependenceType;
 

@@ -11,14 +11,14 @@
 
 #define DEBUG 0
 
-class TaskInfo {
+class TaskDepInfo {
 public:
     using TaskIndexType = long;
-    TaskInfo(const std::string& dag_file) : dag_file(dag_file) {
-        summary();
+    TaskDepInfo(const std::string& dag_file) : dag_file(dag_file) {
+        ParseTaskDepInfo();
     }
 
-    void summary() {
+    void ParseTaskDepInfo() {
         parse_dag();
         topological_sort();
         reindex_task();
@@ -61,7 +61,7 @@ public:
         return layer_topo_order[t];
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const TaskInfo& task_info);
+    friend std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info);
 
 private:
     std::string dag_file;
@@ -227,7 +227,7 @@ private:
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const TaskInfo& task_info) {
+std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info) {
     os << "dag_file: " << task_info.dag_file << "\n"
        << "all_task: ";
     for (const auto& task : task_info.all_task) {
@@ -310,11 +310,103 @@ std::ostream& operator<<(std::ostream& os, const TaskInfo& task_info) {
 
 class TaskPriority {
 public:
-    TaskPriority(const std::string& pri, const std::string& efi): priority(pri), efficiency(efi) {}
+    TaskPriority(const std::string& pri, const std::string& efi): priority_file(pri), efficiency_file(efi) {
+        parseTaskPriority();
+    }
+
+    // data format: "[prio0,prio1,...,prion]"
+    void parse(std::string file, std::vector<int> &vec) {
+        std::ifstream infile(file);
+        std::string line;
+        std::getline(infile, line);
+        line = line.substr(1, line.size() - 2);
+        std::istringstream ss(line);
+        std::string token;
+        while (std::getline(ss, token, ',')) {
+            vec.push_back(std::stoi(token));
+        }
+    }
+
+    void parseTaskPriority() {
+        parse(priority_file, priority);
+        parse(efficiency_file, efficiency);
+    }
 
 private:
-    std::string priority;
-    std::string efficiency;
+    std::string priority_file;
+    std::string efficiency_file;
+
+    std::vector<int> priority;
+    std::vector<int> efficiency;
+};
+
+class TaskExecTime {
+public:
+    TaskExecTime(const std::string& file) : exec_time_file(file) {
+        parseTaskExecTime();
+    }
+
+    TaskExecTime(const std::unordered_map<std::string, std::pair<double, double>>& taskType2execTime) : taskType2execTime(taskType2execTime) {}
+
+    std::pair<double, double> get_exec_time(const std::string& task_type) const {
+        return taskType2execTime.at(task_type);
+    }
+
+    std::pair<double, double> get_exec_time(const std::string& task_type, bool use_gpu) const {
+        if (use_gpu) {
+            return taskType2execTime.at(task_type);
+        } else {
+            return taskType2execTime.at(task_type);
+        }
+    }
+
+    TaskExecTime() {
+        setDefaultExecTime();
+    }
+
+    // input format: 
+    // "task_type:(use_gpu_time, use_cpu_time)\n"
+    void parseTaskExecTime() {
+        std::ifstream infile(exec_time_file);
+        std::string line;
+        while (std::getline(infile, line)) {
+            std::istringstream ss(line);
+            std::string task_type;
+            double use_gpu_time, use_cpu_time;
+            char c;
+            ss >> task_type >> c >> use_gpu_time >> c >> use_cpu_time;
+            taskType2execTime[task_type] = std::make_pair(use_gpu_time, use_cpu_time);
+        }
+    }
+
+    void setDefaultExecTime() {
+        // Map input_num to exec_time. The input_num is the number of input tasks. Provide the default exec_time for each input_num from 0 to 10.
+        std::vector<std::pair<double, double>> input_num2exec_time(11);
+        // There should be a map from input_num to exec_time. 
+        // T_CPU(input_num) = sqrt(input_num) * 0.1
+        // T_GPU(input_num) = sqrt(input_num) * 0.05
+        for (int i = 0; i <= 10; ++i) {
+            input_num2exec_time[i] = std::make_pair(sqrt(i) * 0.1, sqrt(i) * 0.05);
+        }
+        std::string prefix = "input_num_";
+        for (int i = 0; i < input_num2exec_time.size(); ++i) {
+            std::string task_type = prefix + std::to_string(i);
+            taskType2execTime[task_type] = input_num2exec_time[i];
+        }
+    }
+
+private:
+    std::unordered_map<std::string, std::pair<double, double>> taskType2execTime; // <task_type, <use_gpu, use_cpu>>
+    std::string exec_time_file;
+};
+
+class CustomTaskInfo : public TaskDepInfo, public TaskPriority, public TaskExecTime {
+public:
+    CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi, const std::string& task_exec_time) : TaskDepInfo(dag_file), TaskPriority(pri, efi), TaskExecTime(task_exec_time) {
+    }
+
+    CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi) : TaskDepInfo(dag_file), TaskPriority(pri, efi), TaskExecTime() {
+    }
 };
 
 #if DEBUG
