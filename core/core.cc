@@ -1510,12 +1510,12 @@ void App::report_timing(double elapsed_seconds) const
             num_deps += dep_last - dep_first + 1;
             if (nodes > 0) {
               long initial_first, initial_last, local_first, local_last, final_first, final_last;
-              std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
-              std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
-              std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
-              nonlocal_deps += initial_last - initial_first + 1;
-              local_deps += local_last - local_first + 1;
-              nonlocal_deps += final_last - final_first + 1;
+              // std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
+              // std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
+              // std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
+              // nonlocal_deps += initial_last - initial_first + 1;
+              // local_deps += local_last - local_first + 1;
+              // nonlocal_deps += final_last - final_first + 1;
             }
           }
         } else {
@@ -1528,8 +1528,8 @@ void App::report_timing(double elapsed_seconds) const
     total_num_deps += num_deps;
     total_local_deps += local_deps;
     total_nonlocal_deps += nonlocal_deps;
-    flops += count_flops(g);
-    bytes += count_bytes(g);
+    // flops += count_flops(g);
+    // bytes += count_bytes(g);
     local_transfer += local_deps * g.output_bytes_per_task;
     nonlocal_transfer += nonlocal_deps * g.output_bytes_per_task;
   }

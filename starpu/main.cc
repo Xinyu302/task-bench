@@ -1085,15 +1085,16 @@ void StarPUApp::execute_main_loop()
 
   starpu_task_wait_for_all();
   starpu_mpi_barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    double elapsed = Timer::time_end();
+    report_timing(elapsed);
+  }
+
   for (int i = 0; i < graphs.size(); i++) { 
     const TaskGraph &g = graphs[i]; 
     if (g.dependence == DependenceType::USER_DEFINED) {
       g.destroy_task_info();
     }
-  }
-  if (rank == 0) {
-    double elapsed = Timer::time_end();
-    report_timing(elapsed);
   }
 }
 

@@ -11,11 +11,40 @@
 
 #define DEBUG 0
 
-class TaskDepInfo {
+
+class InitializeState {
+public:
+    InitializeState() {
+        initialized = false;
+    }
+
+    InitializeState(bool initialized) : initialized(initialized) {
+    }
+
+    void setInitialized() {
+        initialized = true;
+    }
+
+    void setUninitialized() {
+        initialized = false;
+    }
+
+    bool isInitialized() const {
+        return initialized;
+    }
+    
+private:
+    bool initialized;
+};
+
+class TaskDepInfo : public virtual InitializeState {
 public:
     using TaskIndexType = long;
-    TaskDepInfo(const std::string& dag_file) : dag_file(dag_file) {
+    TaskDepInfo(const std::string& dag_file) : dag_file(dag_file), InitializeState(true) {
         ParseTaskDepInfo();
+    }
+
+    TaskDepInfo(): InitializeState(false) {
     }
 
     void ParseTaskDepInfo() {
@@ -23,11 +52,13 @@ public:
         topological_sort();
         reindex_task();
     }
+
     using TaskDep = std::vector<std::pair<TaskIndexType, TaskIndexType>>;
     using LayerDep = std::vector<TaskDep>;
     using GraphDep = std::vector<LayerDep>;
 
     GraphDep get_dep() {
+        assert(isInitialized());
         GraphDep result;
         for (const auto& layer : layer_topo_order) {
             LayerDep layer_deps;
@@ -42,14 +73,19 @@ public:
 
 
     int get_timestamp() const {
+        assert(isInitialized());
         return layer_topo_order.size();
     }
 
     int get_width_of_timestamp(int t) const {
+        std::cout << "t at custominfo.h = " << t << std::endl;
+        std::cout << "layer_topo_order.size() = " << layer_topo_order.size() << std::endl;
+        assert(isInitialized());
         return layer_topo_order[t].size();
     }
 
     int get_max_width() const {
+        assert(isInitialized());
         int max_width = 0;
         for (const auto& layer : layer_topo_order) {
             max_width = std::max(max_width, (int)layer.size());
@@ -58,6 +94,7 @@ public:
     }
 
     const std::vector<std::string>& get_task_of_timestamp(int t) const {
+        assert(isInitialized());
         return layer_topo_order[t];
     }
 
@@ -308,10 +345,13 @@ std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info) {
     return os;
 }
 
-class TaskPriority {
+class TaskPriority: public virtual InitializeState {
 public:
-    TaskPriority(const std::string& pri, const std::string& efi): priority_file(pri), efficiency_file(efi) {
+    TaskPriority(const std::string& pri, const std::string& efi): priority_file(pri), efficiency_file(efi), InitializeState(true) {
         parseTaskPriority();
+    }
+
+    TaskPriority(): InitializeState(false) {
     }
 
     // data format: "[prio0,prio1,...,prion]"
@@ -332,6 +372,11 @@ public:
         parse(efficiency_file, efficiency);
     }
 
+    int get_priority(int task_id) const {
+        assert(isInitialized());
+        return priority[task_id];
+    }
+
 private:
     std::string priority_file;
     std::string efficiency_file;
@@ -340,13 +385,11 @@ private:
     std::vector<int> efficiency;
 };
 
-class TaskExecTime {
+class TaskExecTime: public virtual InitializeState {
 public:
-    TaskExecTime(const std::string& file) : exec_time_file(file) {
+    TaskExecTime(const std::string& file) : exec_time_file(file), InitializeState(true) {
         parseTaskExecTime();
     }
-
-    TaskExecTime(const std::unordered_map<std::string, std::pair<double, double>>& taskType2execTime) : taskType2execTime(taskType2execTime) {}
 
     std::pair<double, double> get_exec_time(const std::string& task_type) const {
         return taskType2execTime.at(task_type);
@@ -360,7 +403,7 @@ public:
         }
     }
 
-    TaskExecTime() {
+    TaskExecTime(): InitializeState(true) {
         setDefaultExecTime();
     }
 
@@ -406,6 +449,24 @@ public:
     }
 
     CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi) : TaskDepInfo(dag_file), TaskPriority(pri, efi), TaskExecTime() {
+    }
+
+    CustomTaskInfo(const std::string& dag_file, const std::string& task_exec_time) : TaskDepInfo(dag_file), TaskPriority(), TaskExecTime(task_exec_time) {
+    }
+
+    CustomTaskInfo(const std::string& dag_file) : TaskDepInfo(dag_file), TaskPriority(), TaskExecTime() {
+    }
+
+    bool taskDepInfoInitialized() const {
+        return TaskDepInfo::isInitialized();
+    }
+
+    bool taskPriorityInitialized() const {
+        return TaskPriority::isInitialized();
+    }
+
+    bool taskExecTimeInitialized() const {
+        return TaskExecTime::isInitialized();
     }
 };
 
