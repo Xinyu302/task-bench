@@ -2,7 +2,14 @@ from typing import Dict, Tuple
 import math
 import random
 import graphviz
+import time
 
+"""
+    1. 生成一个图，图的节点数为N，图的宽度为W，图的层数为L
+    2. 返回图的节点类型(以输入的数量作为分类标准)
+    3. 返回节点的输出节点
+    4. 约定第一层为输入层，最后一层为输出层，输入层最好只有一个节点，输出层最好只有一个节点
+"""
 class GenNewTask:
     def __init__(self, V, W, sigma_N, edge_density, skip_connection_density):
         self.V = V
@@ -20,16 +27,72 @@ class GenNewTask:
         self.layer_depth = 0
         self.node2output = {}
         self.node2input = {}
-        self.inputnum2node = {} 
+        self.inputnum2node = {}
+        self.gen()
     
-    def draw(self):
+    def __str__(self) -> str:
+        return ""
+    
+    ''' The format of this part is like:
+        POTRF: [0, 10, 16, 19]
+        TRSM: [1, 2, 3, 11, 12, 17]
+        SYRK: [4, 7, 9, 13, 15, 18]
+        GEMM: [5, 6, 8, 14]
+    '''
+    def _task_type_str(self) -> str:
+        # all_task_types = {}
+        result_str = ""
+        task_type_prefix = "input_num_"
+        for input_num, nodes in self.inputnum2node.items():
+            task_type_str = task_type_prefix + str(input_num)
+            result_str += task_type_str + ": [" + ", ".join([str(node) for node in nodes]) + "]\n"
+        return result_str
+
+    def _task_deps_str(self) -> str:
+        result_str = ""
+        for node, dst in self.node2output.items():
+            if len(dst) == 1: # silly format
+                result_str += str(node) + ":(" + str(dst[0]) + ",),\n"
+            else:
+                result_str += str(node) + ":(" + ", ".join([str(d) for d in dst]) + "),\n"
+        return result_str
+            
+    def task_str(self) -> str:
+        return self._task_type_str() + "\n" + self._task_deps_str()
+
+    def auxilary_info(self) -> str:
+        # print all attributes
+        result_str = ""
+        for attr in dir(self):
+            if not attr.startswith("__"):
+                result_str += attr + ": " + str(getattr(self, attr)) + "\n"
+        return result_str
+    
+    def get_max_width(self) -> int:
+        max_width = 0
+        for layer_index in range(self.layer_depth):
+            max_width = max(max_width, self.get_layer_width(layer_index))
+        return max_width
+
+    # dump task_str and auxilary_info to file, draw graph simultaneously
+    def dump(self) -> None:
+        # Add V, layer_depth, max_width to file name and add timestamp to file name
+        file_prefix = "task_" + str(self.V) + "_" + str(self.layer_depth) + "_" + str(self.get_max_width()) + "_" + str(time.time())
+        with open(file_prefix + ".txt", "w") as f:
+            f.write(self.task_str())
+        
+        with open(file_prefix + "_auxilary_info.txt", "w") as f:
+            f.write(self.auxilary_info())
+
+        self.draw(file_prefix + ".gv")
+        
+    def draw(self, file_name="round-table.gv"):
         dot = graphviz.Digraph(comment='The Round Table')
         for node, dst in self.node2output.items():
             for d in dst:
                 dot.edge(str(node), str(d))
-        # dot.view()
         # save to file 
-        dot.render('round-table.gv', view=False)
+        dot.render(file_name, view=False)
 
     def get_node_inputnum(self, node):
         if node not in self.node2input:
@@ -197,9 +260,11 @@ if __name__ == "__main__":
     edge_density = 0.2
     skip_connection_density = 0.14
     newtask = GenNewTask(N, W, sigma_N, edge_density, skip_connection_density)
+    newtask.dump()
     
-    graph, tasks = newtask.gen()
-    print(graph)
-    print(tasks)
-    newtask.draw()
+    # graph, tasks = newtask.gen()
+    # print(graph)
+    # print(tasks)
+    # print(newtask.task_str())
+    # newtask.draw()
     
