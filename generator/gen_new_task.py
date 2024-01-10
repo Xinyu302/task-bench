@@ -152,7 +152,10 @@ class GenNewTask:
         jump = False
         while True:
             layer_node = []
-            N_l = random.randint(math.ceil(self.V / L * (1 - self.sigma_N)), math.floor(self.V / L * (1 + self.sigma_N)))
+            if l == 0:
+                N_l = 1
+            else:
+                N_l = random.randint(math.ceil(self.V / L * (1 - self.sigma_N)), math.floor(self.V / L * (1 + self.sigma_N)))
             for n in range(0, N_l):
                 if node_counter >= self.V:
                     jump = True
