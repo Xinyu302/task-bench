@@ -1,6 +1,7 @@
 from typing import Dict, Tuple
 import math
 import random
+import graphviz
 
 class GenNewTask:
     def __init__(self, V, W, sigma_N, edge_density, skip_connection_density):
@@ -19,6 +20,29 @@ class GenNewTask:
         self.layer_depth = 0
         self.node2output = {}
         self.node2input = {}
+        self.inputnum2node = {} 
+    
+    def draw(self):
+        dot = graphviz.Digraph(comment='The Round Table')
+        for node, dst in self.node2output.items():
+            for d in dst:
+                dot.edge(str(node), str(d))
+        # dot.view()
+        # save to file 
+        dot.render('round-table.gv', view=False)
+
+    def get_node_inputnum(self, node):
+        if node not in self.node2input:
+            return 0
+        return len(self.node2input[node])
+
+    
+    def sort_node_by_inputnum(self):
+        for node, dst in self.node2output.items():
+            input_num = self.get_node_inputnum(node)
+            if input_num not in self.inputnum2node:
+                self.inputnum2node[input_num] = []
+            self.inputnum2node[input_num].append(node)
 
     def gen(self):
         self.algorithm1()
@@ -35,7 +59,8 @@ class GenNewTask:
         self.algorithm2()
         self.algorithm3()
         self.change_node2output()
-        return self.node2output
+        self.sort_node_by_inputnum()
+        return self.node2output, self.inputnum2node
 
     def get_edge_num(self):
         edge_num = 0
@@ -46,6 +71,9 @@ class GenNewTask:
     def add_edge(self, src, dst):
         if src not in self.node2output:
             self.node2output[src] = set()
+        if dst not in self.node2input:
+            self.node2input[dst] = set()
+        self.node2input[dst].add(src)
         self.node2output[src].add(dst)
 
     def change_node2output(self):
@@ -167,6 +195,8 @@ if __name__ == "__main__":
     skip_connection_density = 0.14
     newtask = GenNewTask(N, W, sigma_N, edge_density, skip_connection_density)
     
-    graph = newtask.gen()
+    graph, tasks = newtask.gen()
     print(graph)
+    print(tasks)
+    newtask.draw()
     
