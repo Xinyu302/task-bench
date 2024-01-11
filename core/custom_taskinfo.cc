@@ -37,7 +37,7 @@ TaskDepInfo::TaskDepInfo() : InitializeState(false) {
 void TaskDepInfo::ParseTaskDepInfo() {
     parse_dag();
     topological_sort();
-    reindex_task();
+    map_index_to_coordinate();
     deps = get_dep();
 }
 
@@ -96,6 +96,16 @@ int TaskDepInfo::get_max_width() const {
     return max_width;
 }
 
+int TaskDepInfo::get_task_by_coordinate(int t, int w) const {
+    assert(isInitialized());
+    return layer_topo_order[t][w];
+}
+
+int TaskDepInfo::get_task_num() const {
+    assert(isInitialized());
+    return all_task.size();
+}
+
 const std::vector<int>& TaskDepInfo::get_task_of_timestamp(int t) const {
     assert(isInitialized());
     return layer_topo_order[t];
@@ -142,7 +152,7 @@ void TaskDepInfo::parse_dag() {
         while (std::getline(tasks_ss, task_string, ',')) {
             task_string = trim(task_string);
             int task = std::stoi(task_string);
-            all_task.push_back(task);
+            all_task.insert(task);
             if (tag2task.count(tag) == 0) {
                 tag2task[tag] = std::vector<int>();
             }
@@ -219,7 +229,7 @@ void TaskDepInfo::topological_sort() {
     }
 }
 
-void TaskDepInfo::reindex_task() {
+void TaskDepInfo::map_index_to_coordinate() {
     for (int t = 0; t < layer_topo_order.size(); ++t) {
         const auto& layer = layer_topo_order[t];
         for (int w = 0; w < layer.size(); ++w) {
@@ -338,6 +348,12 @@ int TaskPriority::get_priority(int task_id) const {
     return priority[task_id];
 }
 
+int TaskPriority::get_task_num() const {
+    assert(isInitialized());
+    // always has priority for input tasks
+    return priority.size();
+}
+
 TaskExecTime::TaskExecTime(const std::string& file) : exec_time_file(file), InitializeState(true) {
     parseTaskExecTime();
 }
@@ -413,4 +429,35 @@ bool CustomTaskInfo::taskPriorityInitialized() const {
 bool CustomTaskInfo::taskExecTimeInitialized() const {
     return TaskExecTime::isInitialized();
 }
+
+
+double CustomTaskInfo::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const {
+    assert(taskExecTimeInitialized());
+    int task = get_task_by_coordinate(t, point);
+    std::string task_type = task2tag.at(task);
+    return TaskExecTime::get_exec_time(task_type, use_gpu).second;
+}
+
+int CustomTaskInfo::getTaskPriorityAtPoint(long t, long point) const {
+    assert(taskPriorityInitialized());
+    int task = get_task_by_coordinate(t, point);
+    return TaskPriority::get_priority(task);
+}
+
+int CustomTaskInfo::getTaskAbilityAtPoint(long t, long point) const {
+    assert(taskPriorityInitialized());
+    int task = get_task_by_coordinate(t, point);
+    return TaskPriority::get_priority(task);
+}
+
+bool CustomTaskInfo::validate() {
+    assert(taskDepInfoInitialized());
+    int task_num = TaskPriority::get_task_num();
+    if (taskPriorityInitialized() && TaskPriority::get_task_num() != task_num) {
+        std::cerr << "Task number in dag file and task priority file does not match." << std::endl;
+        return false;
+    }
+    return true;
+}
+
 

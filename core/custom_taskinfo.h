@@ -10,6 +10,7 @@
 #include <queue>
 
 #define DEBUG 0
+class CustomTaskInfo;
 
 class InitializeState {
 public:
@@ -42,13 +43,18 @@ public:
     int get_timestamp() const;
     int get_width_of_timestamp(int t) const;
     int get_max_width() const;
+    int get_task_by_coordinate(int t, int w) const;
+
+    int get_task_num() const;
+
     const std::vector<int>& get_task_of_timestamp(int t) const;
 
     friend std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info);
+    friend CustomTaskInfo;
 
 private:
     std::string dag_file;
-    std::vector<int> all_task;
+    std::unordered_set<int> all_task;
     std::unordered_set<int> input_task;
     std::unordered_set<int> output_task;
     std::unordered_map<int, std::vector<int>> task2output;
@@ -64,7 +70,7 @@ private:
     void parse_dag();
     void topological_sort();
     TaskDep get_dep(int) const;
-    void reindex_task();
+    void map_index_to_coordinate();
     std::string trim(const std::string& str, const std::string& delimiters = " \f\n\r\t\v") const;
 };
 
@@ -77,6 +83,8 @@ public:
     void parseTaskPriority();
 
     int get_priority(int task_id) const;
+
+    int get_task_num() const;
 
 private:
     std::string priority_file;
@@ -112,14 +120,12 @@ public:
     bool taskPriorityInitialized() const;
     bool taskExecTimeInitialized() const;
 
-//     double getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const;
-//     int getTaskPriorityAtPoint(long t, long point) const;
-//     int getTaskAbilityAtPoint(long t, long point) const;
+    double getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const;
+    int getTaskPriorityAtPoint(long t, long point) const;
+    int getTaskAbilityAtPoint(long t, long point) const;
 
-// private:
-//     bool validate();
-//     int pointToFlattenIndex(long t, long point) const;
-    
+private:
+    bool validate();
 };
 
 #endif // CUSTOMTASKINFO_H
