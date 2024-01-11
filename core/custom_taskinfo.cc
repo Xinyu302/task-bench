@@ -372,16 +372,23 @@ TaskExecTime::TaskExecTime(): InitializeState(false) {
 }
 
 // input format:
-// "task_type:(use_gpu_time,use_cpu_time)\n"
+// "task_type: (use_gpu_time, use_cpu_time)\n"
 void TaskExecTime::parseTaskExecTime() {
     std::ifstream infile(exec_time_file);
     std::string line;
     while (std::getline(infile, line)) {
-        std::istringstream ss(line);
         std::string task_type;
         double use_gpu_time, use_cpu_time;
-        char c;
-        ss >> task_type >> c >> use_gpu_time >> c >> use_cpu_time;
+        char discard;
+        // split by ":"
+        int pos = line.find(":");
+        task_type = line.substr(0, pos);
+        int pos1 = line.find("(");
+        int pos2 = line.find(",");
+        int pos3 = line.find(")");
+        // The second argument of std::stod is the number of characters to read.
+        use_gpu_time = std::stod(line.substr(pos1 + 1, pos2 - pos1 - 1));
+        use_cpu_time = std::stod(line.substr(pos2 + 1, pos3 - pos2 - 1));
         taskType2execTime[task_type] = std::make_pair(use_gpu_time, use_cpu_time);
     }
 }
@@ -408,6 +415,13 @@ std::pair<double, double> TaskExecTime::get_exec_time(const std::string& task_ty
 }
 
 double TaskExecTime::get_exec_time(const std::string& task_type, bool use_gpu) const {
+    // print taskType2execTime
+    if (DEBUG) {
+        std::cout << "taskType2execTime: " << std::endl;
+        for (const auto& entry : taskType2execTime) {
+            std::cout << entry.first << ": (" << entry.second.first << ", " << entry.second.second << ")" << std::endl;
+        }
+    }
     assert (taskType2execTime.count(task_type) > 0);
     if (use_gpu) {
         return taskType2execTime.at(task_type).first;
