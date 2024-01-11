@@ -41,27 +41,26 @@ public:
     int get_timestamp() const;
     int get_width_of_timestamp(int t) const;
     int get_max_width() const;
-    const std::vector<std::string>& get_task_of_timestamp(int t) const;
+    const std::vector<int>& get_task_of_timestamp(int t) const;
 
     friend std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info);
 
 private:
     std::string dag_file;
-    std::vector<std::string> all_task;
-    std::unordered_set<std::string> input_task;
-    std::unordered_set<std::string> output_task;
-    std::unordered_map<std::string, std::vector<std::string>> task2output;
-    std::unordered_map<std::string, std::string> tag2task;
-    std::unordered_map<std::string, std::string> task2tag;
-    std::unordered_set<std::string> has_input;
-    std::unordered_map<std::string, std::vector<std::string>> task2input;
-    std::unordered_map<std::string, std::vector<std::string>> task2input_copy;
-    std::vector<std::vector<std::string>> layer_topo_order;
-    std::unordered_map<std::string, std::pair<TaskIndexType, TaskIndexType>> task2index;
+    std::vector<int> all_task;
+    std::unordered_set<int> input_task;
+    std::unordered_set<int> output_task;
+    std::unordered_map<int, std::vector<int>> task2output;
+    std::unordered_map<std::string, std::vector<int>> tag2task;
+    std::unordered_map<int, std::string> task2tag;
+    std::unordered_set<int> has_input;
+    std::unordered_map<int, std::vector<int>> task2input;
+    std::vector<std::vector<int>> layer_topo_order;
+    std::unordered_map<int, std::pair<TaskIndexType, TaskIndexType>> task2index;
 
     void parse_dag();
     void topological_sort();
-    TaskDep get_dep(const std::string& task) const;
+    TaskDep get_dep(int) const;
     void reindex_task();
     std::string trim(const std::string& str, const std::string& delimiters = " \f\n\r\t\v") const;
 };
@@ -109,6 +108,15 @@ public:
     bool taskDepInfoInitialized() const;
     bool taskPriorityInitialized() const;
     bool taskExecTimeInitialized() const;
+
+//     double getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const;
+//     int getTaskPriorityAtPoint(long t, long point) const;
+//     int getTaskAbilityAtPoint(long t, long point) const;
+
+// private:
+//     bool validate();
+//     int pointToFlattenIndex(long t, long point) const;
+    
 };
 
 #endif // CUSTOMTASKINFO_H

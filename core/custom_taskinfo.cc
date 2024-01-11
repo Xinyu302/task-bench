@@ -54,13 +54,13 @@ TaskDepInfo::GraphDep TaskDepInfo::get_dep() {
     return result;
 }
 
-TaskDepInfo::TaskDep TaskDepInfo::get_dep(const std::string& task) const {
+TaskDepInfo::TaskDep TaskDepInfo::get_dep(int task) const {
     if (input_task.count(task) > 0) {
         return {std::make_pair(-1, -1)};
     }
 
     TaskDep result;
-    const auto& inputs = task2input_copy.at(task);
+    const auto& inputs = task2input.at(task);
     for (const auto& input : inputs) {
         const auto& index = task2index.at(input);
         result.push_back(index);
@@ -88,7 +88,7 @@ int TaskDepInfo::get_max_width() const {
     return max_width;
 }
 
-const std::vector<std::string>& TaskDepInfo::get_task_of_timestamp(int t) const {
+const std::vector<int>& TaskDepInfo::get_task_of_timestamp(int t) const {
     assert(isInitialized());
     return layer_topo_order[t];
 }
@@ -130,29 +130,36 @@ void TaskDepInfo::parse_dag() {
         std::cout << tag << " " << tasks_str << std::endl;
 
         std::istringstream tasks_ss(tasks_str);
-        std::string task;
-        while (std::getline(tasks_ss, task, ',')) {
-            task = trim(task);
+        std::string task_string;
+        while (std::getline(tasks_ss, task_string, ',')) {
+            task_string = trim(task_string);
+            int task = std::stoi(task_string);
             all_task.push_back(task);
-            tag2task[tag] = task;
+            if (tag2task.count(tag) == 0) {
+                tag2task[tag] = std::vector<int>();
+            }
+            tag2task[tag].push_back(task);
             task2tag[task] = tag;
         }
     }
 
     for (const auto& dep_line : dep_info) {
-        std::string task, outputs_str;
+        std::string task_str, outputs_str;
         // split by ":"
         int pos = dep_line.find(":");
-        task = dep_line.substr(0, pos);
+        task_str = dep_line.substr(0, pos);
         outputs_str = dep_line.substr(pos + 1);
 
-        task = trim(task);
+        task_str = trim(task_str);
+        int task = std::stoi(task_str);
         outputs_str = trim(outputs_str, "(),");
 
         std::istringstream outputs_ss(outputs_str);
-        std::string output;
-        while (std::getline(outputs_ss, output, ',')) {
-            output = trim(output);
+        int output;
+        std::string output_str;
+        while (std::getline(outputs_ss, output_str, ',')) {
+            output_str = trim(output_str);
+            output = std::stoi(output_str);
             task2output[task].push_back(output);
             has_input.insert(output);
             task2input[output].push_back(task);
@@ -163,28 +170,27 @@ void TaskDepInfo::parse_dag() {
         }
     }
 
-    std::set<std::string> all_task_set(all_task.begin(), all_task.end());
-    std::set<std::string> has_input_set(has_input.begin(), has_input.end());
+    std::set<int> all_task_set(all_task.begin(), all_task.end());
+    std::set<int> has_input_set(has_input.begin(), has_input.end());
 
     std::set_difference(all_task_set.begin(), all_task_set.end(), has_input_set.begin(), has_input_set.end(),
                         std::inserter(input_task, input_task.begin()));
 
-    task2input_copy = task2input;
 }
 
 void TaskDepInfo::topological_sort() {
-    std::queue<std::string> task_queue;
-    std::cout << "input_task: " << std::endl;
+    std::queue<int> task_queue;
+    auto task_innode = task2input; // maintain a copy of task2input. task2input will be modified in the following loop
     for (const auto& task : input_task) {
         task_queue.push(task);
     }
 
     while (!task_queue.empty()) {
         int n = task_queue.size();
-        std::vector<std::string> layer;
+        std::vector<int> layer;
 
         for (int i = 0; i < n; ++i) {
-            std::string task = task_queue.front();
+            int task = task_queue.front();
             task_queue.pop();
             layer.push_back(task);
 
@@ -192,10 +198,10 @@ void TaskDepInfo::topological_sort() {
             for (const auto& output : outputs) {
                 // remove will move task into the end of vector, and return the iterator of the end
                 // then call erase to remove the task from the vector
-                task2input[output].erase(std::remove(task2input[output].begin(), task2input[output].end(), task),
-                                         task2input[output].end());
+                task_innode[output].erase(std::remove(task_innode[output].begin(), task_innode[output].end(), task),
+                                         task_innode[output].end());
 
-                if (task2input[output].empty()) {
+                if (task_innode[output].empty()) {
                     task_queue.push(output);
                 }
             }
@@ -209,7 +215,7 @@ void TaskDepInfo::reindex_task() {
     for (int t = 0; t < layer_topo_order.size(); ++t) {
         const auto& layer = layer_topo_order[t];
         for (int w = 0; w < layer.size(); ++w) {
-            const std::string& task = layer[w];
+            const auto& task = layer[w];
             task2index[task] = std::make_pair(t, w);
         }
     }
@@ -268,15 +274,6 @@ std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info) {
     os << "\n"
        << "task2input: {";
     for (const auto& entry : task_info.task2input) {
-        os << entry.first << ": [";
-        for (const auto& input : entry.second) {
-            os << input << ", ";
-        }
-        os << "], ";
-    }
-    os << "}\n"
-       << "task2input_copy: {";
-    for (const auto& entry : task_info.task2input_copy) {
         os << entry.first << ": [";
         for (const auto& input : entry.second) {
             os << input << ", ";
