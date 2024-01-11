@@ -358,7 +358,7 @@ TaskExecTime::TaskExecTime(const std::string& file) : exec_time_file(file), Init
     parseTaskExecTime();
 }
 
-TaskExecTime::TaskExecTime(): InitializeState(false) {
+TaskExecTime::TaskExecTime(): InitializeState(true) {
     setDefaultExecTime();
 }
 
@@ -394,15 +394,16 @@ void TaskExecTime::setDefaultExecTime() {
 }
 
 std::pair<double, double> TaskExecTime::get_exec_time(const std::string& task_type) const {
+    assert (taskType2execTime.count(task_type) > 0);
     return taskType2execTime.at(task_type);
 }
 
-std::pair<double, double> TaskExecTime::get_exec_time(const std::string& task_type, bool use_gpu) const {
+double TaskExecTime::get_exec_time(const std::string& task_type, bool use_gpu) const {
+    assert (taskType2execTime.count(task_type) > 0);
     if (use_gpu) {
-        return taskType2execTime.at(task_type);
-    } else {
-        return taskType2execTime.at(task_type);
-    }
+        return taskType2execTime.at(task_type).first;
+    } 
+    return taskType2execTime.at(task_type).second;
 }
 
 
@@ -435,7 +436,7 @@ double CustomTaskInfo::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) 
     assert(taskExecTimeInitialized());
     int task = get_task_by_coordinate(t, point);
     std::string task_type = task2tag.at(task);
-    return TaskExecTime::get_exec_time(task_type, use_gpu).second;
+    return TaskExecTime::get_exec_time(task_type, use_gpu);
 }
 
 int CustomTaskInfo::getTaskPriorityAtPoint(long t, long point) const {

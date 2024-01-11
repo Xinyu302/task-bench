@@ -10,7 +10,11 @@
 #include <queue>
 
 #define DEBUG 0
+class InitializeState;
 class CustomTaskInfo;
+class TaskDepInfo;
+class TaskPriority;
+class TaskExecTime;
 
 class InitializeState {
 public:
@@ -98,7 +102,7 @@ class TaskExecTime : public InitializeState {
 public:
     TaskExecTime(const std::string& file);
     std::pair<double, double> get_exec_time(const std::string& task_type) const;
-    std::pair<double, double> get_exec_time(const std::string& task_type, bool use_gpu) const;
+    double get_exec_time(const std::string& task_type, bool use_gpu) const;
     TaskExecTime();
 
     void parseTaskExecTime();

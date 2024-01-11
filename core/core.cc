@@ -94,10 +94,15 @@ TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) co
 //   dependence_map[key] = result;
 // }
 
+double TaskGraph::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const {
+  assert (task_info != nullptr);
+  return task_info->getTaskExecTimeAtPoint(t, point, use_gpu);
+}
+
+
 long TaskGraph::getUserDefineWidthAtTimestep(long timestep) const {
   assert (task_info != nullptr);
   return task_info->get_width_of_timestamp(timestep);
-  // return timestep2point[timestep].size();
 }
 
 long TaskGraph::getUserDefineMaxWidth() const {
@@ -144,7 +149,7 @@ static double get_expect_kernel_execution_time(int num_args, bool is_gpu_kernel)
 
 
 void GPUKernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums, cublasHandle_t inhandle) const {
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time, cublasHandle_t inhandle) const {
   switch (type)
   {
   case KernelType::EMPTY:
@@ -157,7 +162,7 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
     execute_kernel_daxpy_cuda(*this, scratch_ptr, scratch_bytes, timestep);
     break;
   case KernelType::CUSTOMIZE:
-    execute_kernel_customize_cuda(*this, get_expect_kernel_execution_time(input_nums + 1, true));
+    execute_kernel_customize_cuda(*this, expect_time);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -166,7 +171,7 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
 }
 
 void Kernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums) const
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -204,7 +209,7 @@ void Kernel::execute(long graph_index, long timestep, long point,
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
   case KernelType::CUSTOMIZE:
-    execute_kernel_customize(*this, get_expect_kernel_execution_time(input_nums + 1, false));
+    execute_kernel_customize(*this, expect_time);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -915,13 +920,15 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   //   assert(*scratch == MAGIC_VALUE);
   // }
 
+  double expect_execute_time = getTaskExecTimeAtPoint(timestep, point, starpu_cuda);
+
   // Execute kernel
   if (starpu_cuda == 0) {
     Kernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time);
   } else {
     GPUKernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs, inhandle);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time, inhandle);
   }
 }
 

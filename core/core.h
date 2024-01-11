@@ -21,7 +21,6 @@
 
 #include <string>
 #include <vector>
-class TaskDepInfo;
 
 typedef dependence_type_t DependenceType;
 
@@ -35,7 +34,7 @@ struct Kernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes, size_t input_nums = 0) const;
+               char *scratch_ptr, size_t scratch_bytes, double expect_time = 0) const;
   friend struct TaskGraph;
 };
 
@@ -45,7 +44,7 @@ struct GPUKernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes, size_t input_nums = 0, cublasHandle_t inhandle = nullptr) const;
+               char *scratch_ptr, size_t scratch_bytes, double expect_time = 0, cublasHandle_t inhandle = nullptr) const;
   friend struct TaskGraph;
 
 };
@@ -69,6 +68,8 @@ struct TaskGraph : public task_graph_t {
   std::vector<std::pair<long, long>> getDependenceFromTaskInfo(long t, long point) const;
   long getUserDefineWidthAtTimestep(long timestep) const;
   long getUserDefineMaxWidth() const;
+
+  double getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const;
 
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
