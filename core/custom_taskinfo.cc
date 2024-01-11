@@ -135,7 +135,6 @@ void TaskDepInfo::parse_dag() {
     for (int i = 0; i < lines.size(); ++i) {
         line = lines[i];
         line = trim(line);
-        std::cout << line << std::endl;
 
         if (line.empty()) {
             split_line = i;
@@ -154,7 +153,6 @@ void TaskDepInfo::parse_dag() {
         tasks_str = tag_line.substr(pos + 1);
         tag = trim(tag);
         tasks_str = trim(tasks_str, " []");
-        std::cout << tag << " " << tasks_str << std::endl;
 
         std::istringstream tasks_ss(tasks_str);
         std::string task_string;
