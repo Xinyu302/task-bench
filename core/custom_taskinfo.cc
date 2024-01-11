@@ -372,7 +372,7 @@ TaskExecTime::TaskExecTime(): InitializeState(false) {
 }
 
 // input format:
-// "task_type:(use_gpu_time, use_cpu_time)\n"
+// "task_type:(use_gpu_time,use_cpu_time)\n"
 void TaskExecTime::parseTaskExecTime() {
     std::ifstream infile(exec_time_file);
     std::string line;
