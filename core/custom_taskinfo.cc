@@ -101,6 +101,15 @@ int TaskDepInfo::get_task_by_coordinate(int t, int w) const {
     return layer_topo_order[t][w];
 }
 
+int TaskDepInfo::get_task_input_num(int t, int w) const {
+    assert(isInitialized());
+    int task = layer_topo_order[t][w];
+    if (task2input.count(task) == 0) {
+        return 0;
+    }
+    return task2input.at(task).size();
+}
+
 int TaskDepInfo::get_task_num() const {
     assert(isInitialized());
     return all_task.size();
@@ -358,7 +367,7 @@ TaskExecTime::TaskExecTime(const std::string& file) : exec_time_file(file), Init
     parseTaskExecTime();
 }
 
-TaskExecTime::TaskExecTime(): InitializeState(true) {
+TaskExecTime::TaskExecTime(): InitializeState(false) {
     setDefaultExecTime();
 }
 
@@ -433,9 +442,14 @@ bool CustomTaskInfo::taskExecTimeInitialized() const {
 
 
 double CustomTaskInfo::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const {
-    assert(taskExecTimeInitialized());
-    int task = get_task_by_coordinate(t, point);
-    std::string task_type = task2tag.at(task);
+    if (taskExecTimeInitialized()) {
+        int task = get_task_by_coordinate(t, point);
+        std::string task_type = task2tag.at(task);
+        return TaskExecTime::get_exec_time(task_type, use_gpu);
+    }
+    std::string task_type_prefix = "input_num_";
+    int input_num = get_task_input_num(t, point);
+    std::string task_type = task_type_prefix + std::to_string(input_num);
     return TaskExecTime::get_exec_time(task_type, use_gpu);
 }
 

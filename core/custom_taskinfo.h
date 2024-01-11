@@ -48,6 +48,7 @@ public:
     int get_width_of_timestamp(int t) const;
     int get_max_width() const;
     int get_task_by_coordinate(int t, int w) const;
+    int get_task_input_num(int t, int w) const;
 
     int get_task_num() const;
 
