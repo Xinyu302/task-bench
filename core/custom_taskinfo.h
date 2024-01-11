@@ -24,7 +24,7 @@ private:
     bool initialized;
 };
 
-class TaskDepInfo : public virtual InitializeState {
+class TaskDepInfo : public InitializeState {
 public:
     using TaskIndexType = long;
     TaskDepInfo(const std::string& dag_file);
@@ -66,7 +66,7 @@ private:
     std::string trim(const std::string& str, const std::string& delimiters = " \f\n\r\t\v") const;
 };
 
-class TaskPriority : public virtual InitializeState {
+class TaskPriority : public InitializeState {
 public:
     TaskPriority(const std::string& pri, const std::string& efi);
     TaskPriority();
@@ -84,7 +84,7 @@ private:
     std::vector<int> efficiency;
 };
 
-class TaskExecTime : public virtual InitializeState {
+class TaskExecTime : public InitializeState {
 public:
     TaskExecTime(const std::string& file);
     std::pair<double, double> get_exec_time(const std::string& task_type) const;

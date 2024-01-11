@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <math.h>
+#include <iostream>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -59,7 +60,14 @@ using DependenceKeyType = std::pair<long, long>;
 using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
 
 void TaskGraph::set_task_info(std::string task_info_file) {
-  task_info = new TaskDepInfo(task_info_file);
+  task_info = new CustomTaskInfo(task_info_file);
+  nb_fields = task_info->get_timestamp();
+  timesteps = nb_fields;
+  max_width = task_info->get_max_width();
+}
+
+void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
+  this->task_info = task_info;
   nb_fields = task_info->get_timestamp();
   timesteps = nb_fields;
   max_width = task_info->get_max_width();
