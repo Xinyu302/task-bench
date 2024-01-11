@@ -79,8 +79,8 @@ void TaskGraph::destroy_task_info() const {
 
 TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
   assert (task_info != nullptr);
-  static TaskDepInfo::GraphDep graph_dep = task_info->get_dep();
-  return graph_dep[t][point];
+  TaskDepInfo::TaskDep task_dep = task_info->get_dep(t, point);
+  return task_dep;
 }
 
 // void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {

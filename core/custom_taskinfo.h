@@ -37,6 +37,7 @@ public:
     using GraphDep = std::vector<LayerDep>;
 
     GraphDep get_dep();
+    TaskDep get_dep(int t, int w) const;
 
     int get_timestamp() const;
     int get_width_of_timestamp(int t) const;
@@ -57,6 +58,8 @@ private:
     std::unordered_map<int, std::vector<int>> task2input;
     std::vector<std::vector<int>> layer_topo_order;
     std::unordered_map<int, std::pair<TaskIndexType, TaskIndexType>> task2index;
+
+    GraphDep deps;
 
     void parse_dag();
     void topological_sort();

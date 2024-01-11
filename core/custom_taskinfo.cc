@@ -38,6 +38,7 @@ void TaskDepInfo::ParseTaskDepInfo() {
     parse_dag();
     topological_sort();
     reindex_task();
+    deps = get_dep();
 }
 
 TaskDepInfo::GraphDep TaskDepInfo::get_dep() {
@@ -68,6 +69,13 @@ TaskDepInfo::TaskDep TaskDepInfo::get_dep(int task) const {
 
     return result;
 }
+
+TaskDepInfo::TaskDep TaskDepInfo::get_dep(int t, int w) const {
+    assert(isInitialized());
+    int task = layer_topo_order[t][w];
+    return get_dep(task);
+}
+
 
 int TaskDepInfo::get_timestamp() const {
     assert(isInitialized());
