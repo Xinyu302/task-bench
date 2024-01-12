@@ -921,6 +921,8 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   // }
 
   double expect_execute_time = getTaskExecTimeAtPoint(timestep, point, starpu_cuda);
+  // print task coordinate and expect execute time
+  // printf("graph_index: %ld, timestep: %ld, point: %ld, expect_execute_time: %lf\n", graph_index, timestep, point, expect_execute_time);
 
   // Execute kernel
   if (starpu_cuda == 0) {

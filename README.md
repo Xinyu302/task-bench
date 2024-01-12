@@ -96,3 +96,5 @@ And different kernels can be plugged in to the execution:
 
 For detailed instructions on configuring task bench for performance
 experiments, see [EXPERIMENT.md](EXPERIMENT.md).
+
+./main -type user_defined -kernel customize -schedule dmda -custom_dag dag_dot_prof_file_3840_dmda.txt -task_type_runtime cholesky2.runtime  -core 3 -ngpu 1 -output 3686400

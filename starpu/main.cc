@@ -142,9 +142,9 @@ static void task3(void *descr[], void *cl_arg, int starpu_cuda)
     output_bytes,
     output_bytes,
   };
-  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  // cublasHandle_t handle = starpu_cublas_get_local_handle();
   graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, nullptr);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
