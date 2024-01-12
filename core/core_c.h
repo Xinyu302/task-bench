@@ -19,7 +19,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-class TaskInfo;
+
+#include "custom_taskinfo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,7 +89,7 @@ typedef struct task_graph_t {
   size_t output_bytes_per_task;
   size_t scratch_bytes_per_task;
   int nb_fields;
-  TaskInfo *task_info;
+  CustomTaskInfo *task_info;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);

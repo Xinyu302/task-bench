@@ -30,6 +30,8 @@
 
 #include <unistd.h>
 
+#define DEBUG 0
+
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
@@ -674,6 +676,9 @@ private:
   int MB;
   char *starpu_schedule;
   char *custom_dag_file = nullptr;
+  char *task_type_runtime_file = nullptr;
+  char *priority_file = nullptr;
+  char *efficiency_file = nullptr;
   int n_gpu;
   matrix_t mat_array[10];
 };
@@ -837,6 +842,15 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-custom_dag")) {
       custom_dag_file = argv[++i];
     }
+    if (!strcmp(argv[i], "-task_type_runtime")) {
+      task_type_runtime_file = argv[++i];
+    }
+    if (!strcmp(argv[i], "-priority")) {
+      priority_file = argv[++i];
+    }
+    if (!strcmp(argv[i], "-efficiency")) {
+      efficiency_file = argv[++i];
+    }
   }
 }
 
@@ -948,8 +962,19 @@ StarPUApp::StarPUApp(int argc, char **argv)
   if (custom_dag_file != nullptr) {
     for (int i = 0; i < graphs.size(); i++) {
       TaskGraph &graph = graphs[i];
+      CustomTaskInfo *custom_task_info;
       assert(graph.dependence == DependenceType::USER_DEFINED);
-      graph.set_task_info(custom_dag_file);
+      assert(priority_file != nullptr && efficiency_file != nullptr || priority_file == nullptr && efficiency_file == nullptr);
+      if (priority_file != nullptr && efficiency_file != nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file, task_type_runtime_file);
+      } else if (priority_file == nullptr && task_type_runtime_file != nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, task_type_runtime_file);
+      } else if (priority_file != nullptr && task_type_runtime_file == nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file);
+      } else {
+        custom_task_info = new CustomTaskInfo(custom_dag_file);
+      }
+      graph.set_task_info(custom_task_info);
     }
   } else {
     for (int i = 0; i < graphs.size(); i++) {
@@ -1059,11 +1084,10 @@ void StarPUApp::execute_main_loop()
     for (y = 0; y < g.timesteps; y++) {
       long offset = g.offset_at_timestep(y);
       long width = g.width_at_timestep(y);
-      std::cout << "timestep " << y << ", offset " << offset << ", width " << width << std::endl;
+      if (DEBUG)
+        std::cout << "timestep " << y << ", offset " << offset << ", width " << width << std::endl;
       matrix_t &mat = mat_array[i];
       int nb_fields = g.nb_fields;
-      
-      std::cout << "nb_fields = " << nb_fields << std::endl;
 
       for (int x = offset; x <= offset+width-1; x++)
         starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
@@ -1085,15 +1109,16 @@ void StarPUApp::execute_main_loop()
 
   starpu_task_wait_for_all();
   starpu_mpi_barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    double elapsed = Timer::time_end();
+    report_timing(elapsed);
+  }
+
   for (int i = 0; i < graphs.size(); i++) { 
     const TaskGraph &g = graphs[i]; 
     if (g.dependence == DependenceType::USER_DEFINED) {
       g.destroy_task_info();
     }
-  }
-  if (rank == 0) {
-    double elapsed = Timer::time_end();
-    report_timing(elapsed);
   }
 }
 
@@ -1165,12 +1190,16 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
         if (g.dependence == DependenceType::USER_DEFINED) {
-          std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+          if (DEBUG) {
+            std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+          }
           for (std::pair<long, long> dep : deps) {
             long last_time_step = dep.first;
             long last_point = dep.second;
-            std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
-            std::cout << "------------------" << std::endl;
+            if (DEBUG) {
+              std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
+              std::cout << "------------------" << std::endl;
+            }
             args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step)%nb_fields, last_point);
           }
         } else {

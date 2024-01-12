@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <math.h>
+#include <iostream>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -59,7 +60,14 @@ using DependenceKeyType = std::pair<long, long>;
 using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
 
 void TaskGraph::set_task_info(std::string task_info_file) {
-  task_info = new TaskInfo(task_info_file);
+  task_info = new CustomTaskInfo(task_info_file);
+  nb_fields = task_info->get_timestamp();
+  timesteps = nb_fields;
+  max_width = task_info->get_max_width();
+}
+
+void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
+  this->task_info = task_info;
   nb_fields = task_info->get_timestamp();
   timesteps = nb_fields;
   max_width = task_info->get_max_width();
@@ -69,10 +77,10 @@ void TaskGraph::destroy_task_info() const {
   delete task_info;
 }
 
-TaskInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
+TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
   assert (task_info != nullptr);
-  static TaskInfo::GraphDep graph_dep = task_info->get_dep();
-  return graph_dep[t][point];
+  TaskDepInfo::TaskDep task_dep = task_info->get_dep(t, point);
+  return task_dep;
 }
 
 // void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {
@@ -86,10 +94,15 @@ TaskInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const
 //   dependence_map[key] = result;
 // }
 
+double TaskGraph::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const {
+  assert (task_info != nullptr);
+  return task_info->getTaskExecTimeAtPoint(t, point, use_gpu);
+}
+
+
 long TaskGraph::getUserDefineWidthAtTimestep(long timestep) const {
   assert (task_info != nullptr);
   return task_info->get_width_of_timestamp(timestep);
-  // return timestep2point[timestep].size();
 }
 
 long TaskGraph::getUserDefineMaxWidth() const {
@@ -136,7 +149,7 @@ static double get_expect_kernel_execution_time(int num_args, bool is_gpu_kernel)
 
 
 void GPUKernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums, cublasHandle_t inhandle) const {
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time, cublasHandle_t inhandle) const {
   switch (type)
   {
   case KernelType::EMPTY:
@@ -149,7 +162,7 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
     execute_kernel_daxpy_cuda(*this, scratch_ptr, scratch_bytes, timestep);
     break;
   case KernelType::CUSTOMIZE:
-    execute_kernel_customize_cuda(*this, get_expect_kernel_execution_time(input_nums + 1, true));
+    execute_kernel_customize_cuda(*this, expect_time);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -158,7 +171,7 @@ void GPUKernel::execute(long graph_index, long timestep, long point,
 }
 
 void Kernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes, size_t input_nums) const
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -196,7 +209,7 @@ void Kernel::execute(long graph_index, long timestep, long point,
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
   case KernelType::CUSTOMIZE:
-    execute_kernel_customize(*this, get_expect_kernel_execution_time(input_nums + 1, false));
+    execute_kernel_customize(*this, expect_time);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -907,13 +920,15 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   //   assert(*scratch == MAGIC_VALUE);
   // }
 
+  double expect_execute_time = getTaskExecTimeAtPoint(timestep, point, starpu_cuda);
+
   // Execute kernel
   if (starpu_cuda == 0) {
     Kernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time);
   } else {
     GPUKernel k(kernel);
-    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, n_inputs, inhandle);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time, inhandle);
   }
 }
 
@@ -1497,7 +1512,7 @@ void App::report_timing(double elapsed_seconds) const
           node_first = point_node * g.max_width / nodes;
           node_last = (point_node + 1) * g.max_width / nodes - 1;
         }
-        TaskInfo::TaskDep deps;
+        TaskDepInfo::TaskDep deps;
         if (g.dependence != DependenceType::USER_DEFINED) {
           deps = g.dependencies(dset, p);
         } else {
@@ -1510,12 +1525,12 @@ void App::report_timing(double elapsed_seconds) const
             num_deps += dep_last - dep_first + 1;
             if (nodes > 0) {
               long initial_first, initial_last, local_first, local_last, final_first, final_last;
-              std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
-              std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
-              std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
-              nonlocal_deps += initial_last - initial_first + 1;
-              local_deps += local_last - local_first + 1;
-              nonlocal_deps += final_last - final_first + 1;
+              // std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
+              // std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
+              // std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
+              // nonlocal_deps += initial_last - initial_first + 1;
+              // local_deps += local_last - local_first + 1;
+              // nonlocal_deps += final_last - final_first + 1;
             }
           }
         } else {
@@ -1528,8 +1543,8 @@ void App::report_timing(double elapsed_seconds) const
     total_num_deps += num_deps;
     total_local_deps += local_deps;
     total_nonlocal_deps += nonlocal_deps;
-    flops += count_flops(g);
-    bytes += count_bytes(g);
+    // flops += count_flops(g);
+    // bytes += count_bytes(g);
     local_transfer += local_deps * g.output_bytes_per_task;
     nonlocal_transfer += nonlocal_deps * g.output_bytes_per_task;
   }
