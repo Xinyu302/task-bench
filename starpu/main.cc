@@ -30,6 +30,8 @@
 
 #include <unistd.h>
 
+#define DEBUG 0
+
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
@@ -1082,11 +1084,10 @@ void StarPUApp::execute_main_loop()
     for (y = 0; y < g.timesteps; y++) {
       long offset = g.offset_at_timestep(y);
       long width = g.width_at_timestep(y);
-      std::cout << "timestep " << y << ", offset " << offset << ", width " << width << std::endl;
+      if (DEBUG)
+        std::cout << "timestep " << y << ", offset " << offset << ", width " << width << std::endl;
       matrix_t &mat = mat_array[i];
       int nb_fields = g.nb_fields;
-      
-      std::cout << "nb_fields = " << nb_fields << std::endl;
 
       for (int x = offset; x <= offset+width-1; x++)
         starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
@@ -1189,12 +1190,16 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
         if (g.dependence == DependenceType::USER_DEFINED) {
-          std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+          if (DEBUG) {
+            std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+          }
           for (std::pair<long, long> dep : deps) {
             long last_time_step = dep.first;
             long last_point = dep.second;
-            std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
-            std::cout << "------------------" << std::endl;
+            if (DEBUG) {
+              std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
+              std::cout << "------------------" << std::endl;
+            }
             args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step)%nb_fields, last_point);
           }
         } else {
