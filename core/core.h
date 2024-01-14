@@ -64,6 +64,7 @@ struct TaskGraph : public task_graph_t {
   // only can be called when dependence type is USER_DEFINED
   void set_task_info(std::string task_info_file);
   void set_task_info(CustomTaskInfo *task_info);
+  CustomTaskInfo *get_task_info() const;
   void destroy_task_info() const;
   std::vector<std::pair<long, long>> getDependenceFromTaskInfo(long t, long point) const;
   long getUserDefineWidthAtTimestep(long timestep) const;

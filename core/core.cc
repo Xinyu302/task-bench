@@ -73,6 +73,11 @@ void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
   max_width = task_info->get_max_width();
 }
 
+CustomTaskInfo* TaskGraph::get_task_info() const {
+  assert (task_info != nullptr);
+  return task_info;
+}
+
 void TaskGraph::destroy_task_info() const {
   delete task_info;
 }
