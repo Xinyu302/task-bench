@@ -87,6 +87,11 @@ TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) co
   return task_dep;
 }
 
+std::string TaskGraph::getTaskTypeAtPoint(long t, long point) const {
+  assert (task_info != nullptr);
+  return task_info->getTaskTypeAtPoint(t, point);
+}
+
 // void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {
 //   DependenceKeyType key = std::make_pair(t, point);
 //   assert(dependence_map.find(key) == dependence_map.end());
