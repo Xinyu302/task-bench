@@ -27,6 +27,7 @@
 #include <string>
 #include <math.h>
 #include <iostream>
+#include <chrono>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -932,6 +933,9 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
   double expect_execute_time = getTaskExecTimeAtPoint(timestep, point, starpu_cuda);
 
   // Execute kernel
+
+  // compare expect_execute_time with the real execute time
+  auto start = std::chrono::high_resolution_clock::now();
   if (starpu_cuda == 0) {
     Kernel k(kernel);
     k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time);
@@ -939,6 +943,17 @@ void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
     GPUKernel k(kernel);
     k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time, inhandle);
   }
+  auto end = std::chrono::high_resolution_clock::now();
+  // Get expected execute time
+  double expect_execute_time_in_ms = expect_execute_time;// in ms
+  // Get real execute time
+  double real_execute_time_in_ms = std::chrono::duration<double, std::milli>(end - start).count();
+  // Get the difference between expected and real execute time
+  double diff = real_execute_time_in_ms - expect_execute_time_in_ms;
+  // Get the percentage of the difference
+  double diff_percentage = diff / expect_execute_time_in_ms;
+  // print timestep, point, kernel type, expect, real, and diff
+  std::cout << timestep << " " << point << " " << getTaskTypeAtPoint(timestep, point) << " " << expect_execute_time_in_ms << " " << real_execute_time_in_ms << " " << diff << " " << diff_percentage << std::endl;
 }
 
 void TaskGraph::prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
