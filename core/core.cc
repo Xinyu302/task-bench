@@ -74,7 +74,6 @@ void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
 }
 
 CustomTaskInfo* TaskGraph::get_task_info() const {
-  assert (task_info != nullptr);
   return task_info;
 }
 
