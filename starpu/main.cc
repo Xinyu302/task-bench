@@ -30,7 +30,7 @@
 
 #include <unistd.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define VERBOSE_LEVEL 0
 
@@ -1385,6 +1385,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
       }
       insert_task(num_args, priority, payload, args);
     } else {
+      std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
       insert_task(num_args, payload, args);
     }
     // insert_task(num_args, payload, args); 
