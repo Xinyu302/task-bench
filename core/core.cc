@@ -89,10 +89,8 @@ TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) co
 
 std::string TaskGraph::getTaskTypeAtPoint(long t, long point) const {
   assert (task_info != nullptr);
-  if (t == 0 && point == 0) {
-    return "init_task";
-  }
-  return task_info->getTaskTypeAtPoint(t, point);
+  int num_arg = user_defined_dependencies(t, point).size();
+  return task_info->getTaskTypeAtPoint(t, point) + "_" + std::to_string(num_arg);
 }
 
 // void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {
