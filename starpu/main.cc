@@ -30,7 +30,7 @@
 
 #include <unistd.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define VERBOSE_LEVEL 0
 
@@ -899,17 +899,19 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     assert (false && "Not implemented");
   }
   char* task_name_char = getTaskNameChar(task_name);
-  std::cout << "insert " << task_name_char << std::endl;
-  std::cout << "cl_task.name " << cl_task->name << std::endl;
-  std::cout << "cl_task.n_buffers " << cl_task->nbuffers << std::endl;
-  for (int i = 0; i < 10; i++) {
-    if (cl_task->cpu_funcs[0] == task_func_list[i]) {
-      std::cout << "cl_task.cpu_funcs[0] == " << i << std::endl;
-      break;
+  if (DEBUG) {
+    std::cout << "insert " << task_name_char << std::endl;
+    std::cout << "cl_task.name " << cl_task->name << std::endl;
+    std::cout << "cl_task.n_buffers " << cl_task->nbuffers << std::endl;
+    for (int i = 0; i < 10; i++) {
+      if (cl_task->cpu_funcs[0] == task_func_list[i]) {
+        std::cout << "cl_task.cpu_funcs[0] == " << i << std::endl;
+        break;
+      }
     }
+    std::cout << "num_args " << num_args << std::endl;
+    assert (cl_task->cpu_funcs[0] == task_func_list[num_args - 1]);
   }
-  std::cout << "num_args " << num_args << std::endl;
-  assert (cl_task->cpu_funcs[0] == task_func_list[num_args - 1]);
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
@@ -1479,8 +1481,10 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     num_args = 0;
     if (deps.size() == 0) {
       args[num_args++] = output;
-      std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
-      std::cout << "------------------" << std::endl;
+      if (DEBUG) {
+        std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+        std::cout << "------------------" << std::endl;
+      }
       debug_printf(1, "%d[%d] ", x, num_args);
     } else {
       if (t == 0) {
@@ -1530,7 +1534,9 @@ void StarPUApp::execute_timestep(size_t idx, long t)
       }
       insert_task_custom(num_args, payload, args, priority, 0, 0);
     } else {
-      std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+      if (DEBUG) {
+        std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+      }
       insert_task(num_args, payload, args);
     }
     // insert_task(num_args, payload, args); 
