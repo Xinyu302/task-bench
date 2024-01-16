@@ -696,6 +696,7 @@ private:
   char *task_type_runtime_file = nullptr;
   char *priority_file = nullptr;
   char *efficiency_file = nullptr;
+  char *ability_file = nullptr;
   int n_gpu;
   matrix_t mat_array[10];
 };
@@ -1248,13 +1249,18 @@ StarPUApp::StarPUApp(int argc, char **argv)
       TaskGraph &graph = graphs[i];
       CustomTaskInfo *custom_task_info;
       assert(graph.dependence == DependenceType::USER_DEFINED);
-      assert(priority_file != nullptr && efficiency_file != nullptr || priority_file == nullptr && efficiency_file == nullptr);
+      if (priority_file != nullptr) {
+        assert(ability_file == nullptr);
+        ability_file = priority_file;
+        if (efficiency_file == nullptr)
+          efficiency_file = priority_file;
+      }
       if (priority_file != nullptr && efficiency_file != nullptr) {
-        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file, task_type_runtime_file);
+        custom_task_info = new CustomTaskInfo(custom_dag_file, task_type_runtime_file, priority_file, ability_file, efficiency_file);
       } else if (priority_file == nullptr && task_type_runtime_file != nullptr) {
         custom_task_info = new CustomTaskInfo(custom_dag_file, task_type_runtime_file);
       } else if (priority_file != nullptr && task_type_runtime_file == nullptr) {
-        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file);
+        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, ability_file, efficiency_file);
       } else {
         custom_task_info = new CustomTaskInfo(custom_dag_file);
       }
