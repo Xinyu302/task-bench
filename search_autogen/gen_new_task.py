@@ -124,10 +124,10 @@ class GenNewTask:
         compute_node_num = 0
         for layer_index in range(self.layer_depth):
             compute_node_num += self.get_layer_width(layer_index)
-            print("layer_index: ", layer_index, "layer_width: ", self.get_layer_width(layer_index))
-        print("compute_node_num: ", compute_node_num)
-        print("V: ", self.V)
-        print("self.topo_order: ", self.topo_order)
+        #     print("layer_index: ", layer_index, "layer_width: ", self.get_layer_width(layer_index))
+        # print("compute_node_num: ", compute_node_num)
+        # print("V: ", self.V)
+        # print("self.topo_order: ", self.topo_order)
 
         # prevent input num greater than 9
         self.gen_input_limit() 
