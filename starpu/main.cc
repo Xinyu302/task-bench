@@ -698,6 +698,7 @@ private:
   char *efficiency_file = nullptr;
   char *ability_file = nullptr;
   int n_gpu;
+  int auto_opt;
   matrix_t mat_array[10];
 };
 
@@ -1077,6 +1078,9 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-efficiency")) {
       efficiency_file = argv[++i];
     }
+    if (!strcmp(argv[i], "auto_opt")) {
+      auto_opt = atoi(argv[++i]);
+    }
   }
 }
 
@@ -1240,6 +1244,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   MB = 2;
   nb_cores = 1;
   n_gpu = 0;
+
   starpu_schedule = "lws";
   
   parse_argument(argc, argv);
@@ -1299,6 +1304,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   conf->ncuda = n_gpu;
   conf->nopencl = 0;
   conf->sched_policy_name = starpu_schedule;
+  conf->auto_opt = auto_opt;
   
   int ret;
   ret = starpu_init(conf);
