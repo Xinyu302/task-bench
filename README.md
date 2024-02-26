@@ -149,7 +149,13 @@ python3 run_generate.py
 任务编号k: (任务k的所有子节点)
 ```
 
-## 改进后的task-bench的使用方式
+在生成好任务图后，调用dag2prio.py可以生成任务图中的每个任务的优先级。
+
+```bash
+python3 dag2prio.py
+```
+
+### 改进后的task-bench的使用方式
 ```bash
 ./build_all.sh
 ```
